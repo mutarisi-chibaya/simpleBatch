@@ -1,0 +1,1172 @@
+<title>Virtual Batch Still</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: instrument bench — settings rail | animated apparatus | live readouts, analysis tabs below */
+:root{
+  --bg:#f4f6f6; --panel:#ffffff; --panel2:#eef2f2; --ink:#0f1a1c; --ink2:#46585b; --muted:#7b8b8e;
+  --line:#d5dfe0; --grid:#e3e9ea; --accent:#0f6e78; --accent-ink:#ffffff; --glass:#7fa7ad; --glassfill:rgba(160,205,212,.18);
+  --liquid:#bfe0ea; --heat:#e4572e; --water:#3d8fd6; --warn:#b26b00; --crit:#c23434; --good:#1f8a3a;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1517; --panel:#172023; --panel2:#1d292c; --ink:#e8efef; --ink2:#b3c3c5; --muted:#7f9295;
+  --line:#2c3a3d; --grid:#253235; --accent:#3fb3bf; --accent-ink:#06191c; --glass:#6d969c; --glassfill:rgba(120,180,190,.10);
+  --liquid:#2f5d6b; --heat:#ff7448; --water:#4f9fe6; --warn:#f0a733; --crit:#ef6464; --good:#3cbf5c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#2b9a2b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1517; --panel:#172023; --panel2:#1d292c; --ink:#e8efef; --ink2:#b3c3c5; --muted:#7f9295;
+  --line:#2c3a3d; --grid:#253235; --accent:#3fb3bf; --accent-ink:#06191c; --glass:#6d969c; --glassfill:rgba(120,180,190,.10);
+  --liquid:#2f5d6b; --heat:#ff7448; --water:#4f9fe6; --warn:#f0a733; --crit:#ef6464; --good:#3cbf5c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#2b9a2b; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--panel)}
+.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:18px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+.appbar-in{max-width:1360px;margin:0 auto;display:flex;align-items:center;gap:16px;min-height:60px;flex-wrap:wrap;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{flex:0 0 auto}
+.brand b{font:600 1.3rem var(--f-display);display:block;line-height:1.05;white-space:nowrap}
+.brand small{display:block;font-size:.76rem;color:var(--muted);white-space:nowrap}
+.appnav{display:flex;gap:2px;overflow-x:auto;flex:1 1 auto;justify-content:center;scrollbar-width:none}
+.appnav a{padding:19px 15px 16px;color:var(--ink2);text-decoration:none;font:600 1rem var(--f-body);border-bottom:3px solid transparent;white-space:nowrap}
+.appnav a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.appnav a:hover{color:var(--ink)}
+.appnav a:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.mini{display:flex;align-items:center;gap:8px;margin-left:auto}
+@media (max-width:880px){.appbar-in{gap:0 12px;padding-top:8px}.brand small{display:none}.appnav{order:3;flex-basis:100%;justify-content:flex-start}.appnav a{padding:10px 12px 9px}}
+@media (max-width:480px){.mini .status-pill{display:none}}
+.view{display:flex;flex-direction:column;gap:16px}
+.viewhead{display:flex;flex-direction:column;gap:4px}
+.viewhead h1{font-size:1.9rem}
+.viewhead p{color:var(--ink2);max-width:78ch}
+.ctx{font-size:.88rem;color:var(--ink2);background:var(--panel2);border-radius:8px;padding:8px 12px;align-self:flex-start}
+.panel,.bench{scroll-margin-top:84px}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;max-width:75ch}
+.taburl{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px 16px;margin:0}
+.taburl dt{font-weight:700}
+.taburl dd{margin:0;color:var(--ink2)}
+.results-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+hr.sep{border:0;border-top:1px solid var(--line);margin:8px 0 0}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:2rem;line-height:1.05}
+h2{font-size:1.35rem}
+h3{font-size:1.05rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2)}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+header.top .sub{color:var(--ink2);max-width:70ch}
+.sys-switch{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.sys-switch button{border:0;background:transparent;color:var(--ink2);padding:8px 14px;font:600 .95rem var(--f-body);cursor:pointer}
+.sys-switch button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.bench{display:grid;grid-template-columns:290px minmax(0,1fr) 250px;gap:16px;align-items:start}
+@media (max-width:1100px){.bench{grid-template-columns:minmax(0,1fr) 250px}.settings{grid-column:1/-1}}
+@media (max-width:720px){.bench{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.settings{display:flex;flex-direction:column;gap:12px}
+.settings fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.settings legend{font:600 .78rem var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
+@media (max-width:1100px) and (min-width:721px){.settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}.settings .set-head,.settings .lockhint{grid-column:1/-1}}
+@media (max-width:720px){.bench>.stage{order:-1}}
+.set-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.set-head h2{font-size:1.4rem}
+.settings.basic .adv{display:none!important}
+.settings fieldset{padding-top:12px;border-top:1px solid var(--grid)}
+.settings legend{float:left;width:100%;font:600 1rem var(--f-display)!important;letter-spacing:.06em!important;color:var(--ink)!important;margin-bottom:8px!important}
+.settings legend i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 .75rem var(--f-body);margin-right:6px;vertical-align:1px}
+.hint{font-size:.82rem;color:var(--muted)}
+input.sw{appearance:none;-webkit-appearance:none;width:36px;height:20px;border-radius:999px;background:var(--line);position:relative;flex:0 0 auto;cursor:pointer;transition:background .15s;margin:0!important}
+input.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s}
+input.sw:checked{background:var(--accent)}
+input.sw:checked::after{left:18px}
+input.sw:disabled{opacity:.45;cursor:not-allowed}
+input.sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.check:has(input.sw){align-items:center;justify-content:space-between;flex-direction:row-reverse;gap:12px}
+.check.left:has(input.sw){flex-direction:row;justify-content:flex-start}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2)}
+.seg button{border:0;background:transparent;padding:9px 8px;font:600 .9rem var(--f-body);color:var(--ink2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:disabled{opacity:.5;cursor:not-allowed}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+details.fold>summary{cursor:pointer;font-size:.88rem;color:var(--accent);font-weight:600;padding:4px 0;list-style:none}
+details.fold>summary::before{content:"▸ ";}
+details.fold[open]>summary::before{content:"▾ ";}
+details.fold>summary::-webkit-details-marker{display:none}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--panel2);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.tile span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tile b{font:600 1.15rem var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.subtabs{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px}
+.subtabs button{border:1px solid var(--line);background:var(--panel2);color:var(--ink2);padding:6px 12px;border-radius:999px;font:600 .86rem var(--f-body);cursor:pointer}
+.subtabs button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.subtabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabs button{font-size:1.02rem!important;padding:10px 16px!important}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;color:var(--ink2)}
+.field label output{font-family:var(--f-mono);color:var(--ink);font-size:.85rem}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select,input[type=number]{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--ink);font:inherit;font-size:.9rem}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;color:var(--ink2)}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.lockhint{font-size:.8rem;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:8px 14px;border-radius:7px;font:600 .92rem var(--f-body);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.tabs button:focus-visible,.sys-switch button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.speed{display:flex;align-items:center;gap:6px;font-size:.88rem;color:var(--ink2)}
+.speed select{width:auto}
+.stage{display:flex;flex-direction:column;gap:10px}
+.stage svg{width:100%;height:auto;display:block}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font:600 .78rem var(--f-body);text-transform:uppercase;letter-spacing:.08em;border:1px solid var(--line);background:var(--panel2);color:var(--ink2)}
+.status-pill i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.status-pill[data-s="heating"] i{background:var(--heat)}
+.status-pill[data-s="boiling"] i{background:var(--good)}
+.status-pill[data-s="done"] i{background:var(--accent)}
+.rack{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.tube{flex:0 0 auto;width:34px;display:flex;flex-direction:column;align-items:center;gap:2px;font:500 .7rem var(--f-mono);color:var(--muted)}
+.tube .glass{width:18px;height:56px;border:1.5px solid var(--glass);border-top:0;border-radius:0 0 9px 9px;position:relative;overflow:hidden;background:var(--glassfill)}
+.tube .glass span{position:absolute;left:0;right:0;bottom:0}
+.tube.bump .glass{border-color:var(--warn)}
+.readouts{display:flex;flex-direction:column;gap:2px}
+.ro{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--grid);font-size:.88rem}
+.ro span:first-child{color:var(--ink2)}
+.ro b{font:600 .9rem var(--f-mono);font-variant-numeric:tabular-nums}
+.log{max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:.84rem}
+.log div{padding-left:8px;border-left:3px solid var(--line)}
+.log div.warn{border-color:var(--warn)}
+.log div.crit{border-color:var(--crit)}
+.log div.good{border-color:var(--good)}
+.log time{font-family:var(--f-mono);color:var(--muted);margin-right:6px}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;color:var(--ink2);padding:10px 14px;font:600 .95rem var(--f-body);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{display:flex;flex-direction:column;gap:14px;padding-top:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.chartbox{position:relative;height:290px}
+.chartcard{display:flex;flex-direction:column;gap:8px}
+.chartcard p.cap{font-size:.84rem;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.txt{font-family:var(--f-body)}
+.flag{font-family:var(--f-body);font-size:.75rem;padding:1px 7px;border-radius:999px;border:1px solid currentColor}
+.flag.warn{color:var(--warn)}
+.flag.crit{color:var(--crit)}
+.note{font-size:.88rem;color:var(--ink2);background:var(--panel2);border-radius:8px;padding:10px 12px;max-width:95ch}
+.note b{color:var(--ink)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.kv div{background:var(--panel2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kv b{font:600 1.15rem var(--f-mono);font-variant-numeric:tabular-nums}
+.eq{font-family:var(--f-mono);font-size:.9rem;background:var(--panel2);padding:10px 12px;border-radius:8px;overflow-x:auto;white-space:nowrap}
+.effects{display:flex;flex-direction:column;gap:6px}
+.effrow{display:grid;grid-template-columns:150px minmax(0,1fr) 70px;gap:10px;align-items:center;font-size:.86rem}
+.effbar{height:14px;position:relative;background:var(--panel2);border-radius:3px}
+.effbar i{position:absolute;top:0;bottom:0;border-radius:3px}
+.effbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)}
+details summary{cursor:pointer;font-weight:600}
+.csvbox{width:100%;height:160px;font:12px var(--f-mono);background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px}
+/* SVG apparatus */
+.ap-glass{fill:var(--glassfill);stroke:var(--glass);stroke-width:2.2}
+.ap-line{stroke:var(--glass);stroke-width:2;fill:none}
+.ap-mantle{fill:var(--panel2);stroke:var(--line);stroke-width:2}
+.ap-text{fill:var(--ink2);font:600 12px var(--f-body)}
+.ap-mono{fill:var(--ink);font:600 13px var(--f-mono)}
+.ap-small{fill:var(--muted);font:500 10.5px var(--f-body)}
+.ap-box{fill:var(--panel);stroke:var(--line)}
+.coolant{fill:var(--water);opacity:.22;transition:opacity .4s}
+.coolflow{stroke:var(--water);stroke-width:2;stroke-dasharray:6 10;fill:none;opacity:.8}
+.cool-on .coolflow{animation:flow 1s linear infinite}
+.cool-low .coolflow{animation:flow 3s linear infinite;opacity:.45}
+.cool-off .coolflow{opacity:0}
+.cool-off .coolant{opacity:.04}
+.cool-low .coolant{opacity:.12}
+@keyframes flow{to{stroke-dashoffset:-16}}
+.hose{stroke:var(--water);stroke-width:4;fill:none;opacity:.55;stroke-linecap:round}
+.vapour{fill:var(--muted);opacity:0}
+@media (prefers-reduced-motion:reduce){.cool-on .coolflow,.cool-low .coolflow{animation:none}}
+footer{font-size:.82rem;color:var(--muted)}
+.fxrow{display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--grid)}
+.fxrow .check{font-weight:600;color:var(--ink)}
+.fxdesc{font-size:.8rem;color:var(--muted);padding-left:24px}
+.fxrow .field{padding-left:24px}
+.fxrow.off .fxdesc{opacity:.6}
+.btn.sm{padding:5px 10px;font-size:.82rem}
+.fxbar{display:flex;flex-wrap:wrap;gap:6px}
+.banner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:10px 14px}
+.tour-block{position:fixed;inset:0;z-index:49}
+.tour-hole{position:fixed;z-index:50;border-radius:10px;box-shadow:0 0 0 9999px rgba(4,12,14,.62);pointer-events:none;transition:all .25s ease;outline:2px solid var(--accent)}
+.tour-card{position:fixed;z-index:51;width:min(400px,calc(100vw - 32px));background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:10px;transition:top .25s ease,left .25s ease}
+.tour-card .step{font:600 .74rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tour-card p{font-size:.93rem;color:var(--ink2)}
+@media (prefers-reduced-motion:reduce){.tour-hole,.tour-card{transition:none}}
+.lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px}
+.lesson{background:var(--panel2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.lesson .eyebrow{font:600 .72rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.lesson h2{font-size:1.25rem}
+.lesson ul{margin:0;padding-left:18px;font-size:.9rem;color:var(--ink2);display:flex;flex-direction:column;gap:3px}
+.lesson .lbl{font:600 .78rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.lesson details p{font-size:.9rem;color:var(--ink2);margin-top:6px}
+.lesson .controls .btn{padding:6px 11px;font-size:.86rem}
+</style>
+
+<header class="appbar" id="appbar">
+  <div class="appbar-in">
+    <div class="brand"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M12 3h8M13 3v9L6 25a3 3 0 0 0 2.6 4.5h14.8A3 3 0 0 0 26 25l-7-13V3" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M9.2 21h13.6l2 3.8a1.6 1.6 0 0 1-1.4 2.4H8.6a1.6 1.6 0 0 1-1.4-2.4z" fill="var(--accent)" opacity=".35"/></svg><div><b>Virtual Batch Still</b><small>CLB 321 batch distillation</small></div></div>
+    <nav class="appnav" id="appnav" aria-label="Sections">
+      <a href="#lab" data-view="lab" aria-current="page">Lab</a>
+      <a href="#lessons" data-view="lessons">Lessons</a>
+      <a href="#analysis" data-view="analysis">Analysis</a>
+      <a href="#compare" data-view="compare">Compare</a>
+      <a href="#help" data-view="help">Help</a>
+    </nav>
+    <div class="mini"><span class="status-pill" id="miniPill" data-s="idle"><i></i><span id="miniTxt">Ready</span></span><button class="btn primary sm" id="btnRun2">Start</button></div>
+  </div>
+</header>
+<div class="wrap">
+  <section class="view" data-view="lab">
+  <div class="banner" id="banner" hidden><span>New here? The guided tour takes about two minutes and explains every part of the screen. The <b>Lessons</b> tab has ten ready-made experiments.</span><div class="controls"><button class="btn primary" id="bannerTour">Start the tour</button><button class="btn" id="bannerClose">Dismiss</button></div></div>
+  <section class="bench">
+    <!-- SETTINGS -->
+    <aside class="card settings basic" id="settings" aria-label="Experiment settings">
+      <div class="set-head"><h2>Set up</h2><label class="check left hint" for="advToggle" style="gap:8px"><input class="sw" id="advToggle" type="checkbox"> All settings</label></div>
+      <div class="sys-switch" role="group" aria-label="Chemical system">
+      <button id="sysIpa" aria-pressed="true">IPA – water</button>
+      <button id="sysEth" aria-pressed="false">Ethanol – water</button>
+    </div>
+      <fieldset id="fsCharge">
+        <legend><i>1</i>Mixture</legend>
+        <div class="field adv"><label for="flask">Round-bottom flask</label>
+          <select id="flask"><option value="250">250 mL (200 W mantle)</option><option value="500" selected>500 mL (300 W mantle)</option><option value="1000">1000 mL (450 W mantle)</option></select></div>
+        <div class="field"><label for="feed">Alcohol in feed <output id="feedOut"></output></label><input id="feed" type="range" min="5" max="90" step="1" value="50"></div>
+        <div class="field"><label for="charge">Charge volume <output id="chargeOut"></output></label><input id="charge" type="range" min="50" max="800" step="10" value="250"></div>
+        <div class="field adv"><label for="press">Atmospheric pressure</label>
+          <select id="press"><option value="87">Pretoria lab, 87 kPa</option><option value="101.325">Sea level, 101.3 kPa</option><option value="70">High altitude, 70 kPa</option></select></div>
+        <label class="check" for="chips"><input class="sw" id="chips" type="checkbox" checked> Boiling chips added</label>
+      </fieldset>
+      <fieldset id="fsOp">
+        <legend><i>2</i>Running</legend>
+        <div class="field"><label for="heater">Heater <output id="heaterOut"></output></label><input id="heater" type="range" min="0" max="100" step="1" value="45"></div>
+        <label class="check" for="proc"><input class="sw" id="proc" type="checkbox" checked> Full power until it boils, then drop to the heater setting</label>
+        <div class="field"><label for="cool">Cooling water</label>
+          <select id="cool"><option value="on">On, full flow</option><option value="low">Trickle flow</option><option value="off">Off</option></select></div>
+        <div class="field adv"><label for="frac">Fraction size (polytop mark)</label>
+          <select id="frac"><option value="5">5 mL</option><option value="10" selected>10 mL</option><option value="20">20 mL</option></select></div>
+        <div class="field adv"><label for="nfrac">Stop after <output id="nfracOut"></output></label><input id="nfrac" type="range" min="3" max="25" step="1" value="12"></div>
+      </fieldset>
+      <fieldset id="fsNon">
+        <legend><i>3</i>Real-world effects</legend>
+        <div class="seg" role="group" aria-label="Real-world effects"><button id="fxAllOn" aria-pressed="true">Real lab</button><button id="fxAllOff" aria-pressed="false">Textbook ideal</button></div>
+        <p class="hint" id="fxCount"></p>
+        <details class="fold" id="fxDetails"><summary>Choose effects one by one</summary>
+        <div>
+        <div class="fxrow" data-fx="eq"><label class="check" for="fx_eq"><input class="sw" id="fx_eq" type="checkbox" checked> Imperfect equilibrium</label>
+          <span class="fxdesc">Vapour leaves leaner than equilibrium predicts. Lowers purity.</span>
+          <div class="field"><label for="eff">Still efficiency <output id="effOut"></output></label><input id="eff" type="range" min="40" max="100" step="5" value="90"></div></div>
+        <div class="fxrow" data-fx="entrain"><label class="check" for="fx_entrain"><input class="sw" id="fx_entrain" type="checkbox" checked> Spray carry-over</label>
+          <span class="fxdesc">Hard boiling throws droplets of pot liquid into the vapour. Lowers purity at high heater settings.</span></div>
+        <div class="fxrow" data-fx="loss"><label class="check" for="fx_loss"><input class="sw" id="fx_loss" type="checkbox" checked> Heat loss</label>
+          <span class="fxdesc">Heat leaks out through the glass. Slows the run and wastes energy.</span>
+          <div class="field"><label for="loss">Insulation</label>
+          <select id="loss"><option value="0.45" selected>Flask neck lagged</option><option value="1.1">Bare glass</option></select></div></div>
+        <div class="fxrow" data-fx="hold"><label class="check" for="fx_hold"><input class="sw" id="fx_hold" type="checkbox" checked> Condenser holdup</label>
+          <span class="fxdesc">About 1.2 mL stays on the condenser walls. Delays the first drop, and the mass balance closes below 100%.</span></div>
+        <div class="fxrow" data-fx="contract"><label class="check" for="fx_contract"><input class="sw" id="fx_contract" type="checkbox" checked> Volume contraction</label>
+          <span class="fxdesc">Alcohol and water shrink about 4% when mixed. Changes how many moles a measured volume holds.</span></div>
+        <div class="fxrow" data-fx="foam"><label class="check" for="fx_foam"><input class="sw" id="fx_foam" type="checkbox" checked> Foaming when overfilled</label>
+          <span class="fxdesc">A flask more than 70% full sprays liquid over. Lowers purity.</span></div>
+        <div class="fxrow" data-fx="noise"><label class="check" for="fx_noise"><input class="sw" id="fx_noise" type="checkbox" checked> Refractometer reading error</label>
+          <span class="fxdesc">Random scatter in every reading, including the calibration standards.</span>
+          <div class="field"><label for="noise">Precision</label>
+          <select id="noise"><option value="0.0002" selected>±0.0002 (Abbe)</option><option value="0.0006">±0.0006 (handheld)</option><option value="0.0015">±0.0015 (careless)</option></select></div></div>
+        <div class="fxrow" data-fx="temp"><label class="check" for="fx_temp"><input class="sw" id="fx_temp" type="checkbox" checked> Sample temperature error</label>
+          <span class="fxdesc">Warm samples have a lower refractive index, so they read weaker than they are.</span>
+          <div class="field"><label for="riT">Sample temperature when read</label>
+          <select id="riT"><option value="20" selected>Cooled to 20 °C (as calibrated)</option><option value="30">Read warm, about 30 °C</option><option value="45">Read hot, about 45 °C</option></select></div></div>
+        </div></details>
+        <button class="btn sm" id="fxCompare">Compare ideal vs real</button>
+      </fieldset>
+      <p class="lockhint" id="lockhint">The mixture settings and effects are locked during a run. Press Reset to change them.</p>
+    </aside>
+
+    <!-- APPARATUS -->
+    <div class="card stage">
+      <div class="controls">
+        <button class="btn primary" id="btnRun">Start</button>
+        <button class="btn" id="btnFinish">Finish instantly</button>
+        <button class="btn" id="btnReset">Reset</button>
+        <label class="speed" for="speed">Speed <select id="speed"><option value="1">1×</option><option value="10">10×</option><option value="30" selected>30×</option><option value="60">60×</option><option value="120">120×</option></select></label>
+        <span class="status-pill" id="phasePill" data-s="idle"><i></i><span id="phaseTxt">Ready</span></span>
+      </div>
+      <svg id="ap" viewBox="0 0 720 400" role="img" aria-label="Animated batch distillation apparatus: heating mantle, round-bottom flask, thermometer, Liebig condenser and fraction tube">
+        <defs>
+          <clipPath id="flaskClip"><circle cx="160" cy="250" r="76"/></clipPath>
+          <clipPath id="tubeClip"><path d="M511,262 L511,360 A10,10 0 0 0 531,360 L531,262 Z"/></clipPath>
+          <radialGradient id="glowG" cx="50%" cy="0%" r="80%"><stop offset="0%" stop-color="var(--heat)" stop-opacity="1"/><stop offset="100%" stop-color="var(--heat)" stop-opacity="0"/></radialGradient>
+        </defs>
+        <!-- bench -->
+        <line x1="20" y1="380" x2="700" y2="380" stroke="var(--line)" stroke-width="2"/>
+        <!-- mantle -->
+        <rect class="ap-mantle" x="62" y="262" width="196" height="116" rx="14"/>
+        <path d="M78,262 A82,82 0 0 0 242,262 Z" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>
+        <path id="glow" d="M80,262 A80,80 0 0 0 240,262 Z" fill="url(#glowG)" opacity="0"/>
+        <circle cx="225" cy="352" r="10" class="ap-box"/>
+        <line id="knob" x1="225" y1="352" x2="225" y2="344" stroke="var(--ink2)" stroke-width="2.5" stroke-linecap="round"/>
+        <text x="90" y="357" class="ap-small">Heating mantle</text>
+        <text id="powerTxt" x="90" y="371" class="ap-mono" style="font-size:11px">0 W</text>
+        <!-- flask liquid -->
+        <g clip-path="url(#flaskClip)">
+          <rect id="liquid" x="80" y="250" width="160" height="80" fill="var(--liquid)"/>
+          <g id="bubbles"></g>
+        </g>
+        <!-- vapour wisps in neck -->
+        <g id="vapourG" opacity="0">
+          <path d="M152,170 q6,-12 0,-24 q-6,-12 0,-24" class="ap-line" stroke="var(--muted)" stroke-dasharray="3 5"/>
+          <path d="M166,172 q-6,-12 0,-24 q6,-12 0,-24" class="ap-line" stroke="var(--muted)" stroke-dasharray="3 5"/>
+        </g>
+        <!-- flask outline -->
+        <path class="ap-glass" d="M146,96 L146,173.3 A78,78 0 1,0 174,173.3 L174,96 Z" fill="none"/>
+        <!-- still head side arm -->
+        <path class="ap-glass" d="M174,104 L186,104 L186,120 L174,120" fill="none"/>
+        <!-- thermometer -->
+        <line x1="160" y1="30" x2="160" y2="110" stroke="var(--ink2)" stroke-width="3" stroke-linecap="round"/>
+        <rect x="150" y="26" width="20" height="10" rx="2" fill="var(--panel2)" stroke="var(--line)"/>
+        <circle cx="160" cy="113" r="4.5" fill="var(--heat)"/>
+        <line id="mercury" x1="160" y1="110" x2="160" y2="90" stroke="var(--heat)" stroke-width="1.6"/>
+        <rect x="190" y="18" width="128" height="40" rx="6" class="ap-box"/>
+        <text x="200" y="34" class="ap-small">Still-head temperature</text>
+        <text id="tTxt" x="200" y="51" class="ap-mono">20.0 °C</text>
+        <line x1="170" y1="40" x2="190" y2="40" stroke="var(--line)"/>
+        <!-- condenser -->
+        <g id="condenser" class="cool-on" transform="translate(186,112) rotate(19.2)">
+          <rect x="0" y="-5" width="358" height="10" rx="4" class="ap-glass"/>
+          <rect x="60" y="-16" width="250" height="32" rx="12" class="ap-glass"/>
+          <rect class="coolant" x="62" y="-14" width="246" height="28" rx="11"/>
+          <path class="coolflow" d="M300,10 L70,10 M70,-10 L300,-10"/>
+          <rect x="290" y="16" width="10" height="16" class="ap-glass"/>
+          <rect x="70" y="-32" width="10" height="16" class="ap-glass"/>
+          <g id="vapourInCond" opacity="0"><line x1="6" y1="0" x2="80" y2="0" stroke="var(--muted)" stroke-width="3" stroke-dasharray="2 5"/></g>
+        </g>
+        <path class="hose" d="M300,250 C300,300 360,320 380,330"/>
+        <path class="hose" d="M240,110 C250,70 300,60 330,70"/>
+        <text x="335" y="74" class="ap-small">water out</text>
+        <text x="384" y="336" class="ap-small">water in</text>
+        <text id="coolTxt" x="360" y="108" class="ap-text">Liebig condenser</text>
+        <!-- escaping vapour at outlet (cooling off) -->
+        <g id="escape" opacity="0">
+          <circle cx="545" cy="215" r="7" fill="var(--muted)" opacity=".35"/><circle cx="560" cy="200" r="9" fill="var(--muted)" opacity=".25"/><circle cx="575" cy="183" r="11" fill="var(--muted)" opacity=".15"/>
+          <text x="560" y="168" class="ap-small" style="fill:var(--crit)">alcohol vapour escaping</text>
+        </g>
+        <!-- receiving tube -->
+        <path d="M511,262 L511,360 A10,10 0 0 0 531,360 L531,262" class="ap-glass" fill="none"/>
+        <g clip-path="url(#tubeClip)"><rect id="tubeFill" x="509" y="370" width="24" height="0" fill="var(--s1)"/></g>
+        <line id="tubeMark" x1="505" y1="280" x2="537" y2="280" stroke="var(--crit)" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text id="tubeMarkTxt" x="540" y="283" class="ap-small">10 mL mark</text>
+        <text id="tubeLbl" x="521" y="394" class="ap-text" text-anchor="middle">Fraction 1</text>
+        <g id="drops"></g>
+        <!-- completed mini tubes -->
+        <g id="miniRack"></g>
+        <!-- pot label -->
+        <text id="potTxt" x="160" y="250" class="ap-mono" text-anchor="middle" style="font-size:12px"></text>
+        <text id="splash" x="70" y="140" class="ap-text" style="fill:var(--warn)" opacity="0">BUMP!</text>
+      </svg>
+      <div>
+        <h3 style="margin-bottom:6px">Fraction rack</h3>
+        <div class="rack" id="rack" aria-label="Collected fractions"></div>
+        <p class="muted" style="font-size:.8rem;margin-top:4px">The tint shows the alcohol content from the simulation, darker meaning more alcohol. Real distillate is colourless, so you only find its strength with the refractometer. An orange outline marks a tube contaminated by bumping.</p>
+      </div>
+    </div>
+
+    <!-- READOUTS -->
+    <aside class="card" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h3>Live readings</h3>
+        <div class="tiles" id="roMain"></div>
+        <details class="fold"><summary>All readings</summary><div class="readouts" id="readouts"></div></details>
+      </div>
+      <div>
+        <h3 style="margin-bottom:6px">Lab notebook</h3>
+        <div class="log" id="log" aria-live="polite"></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="card">
+    <div class="results-head"><h2>Results</h2><span class="muted" style="font-size:.85rem">Updates live while the still runs</span></div>
+    
+    <div class="panel" data-panel="live" style="padding-top:4px">
+      <div class="grid2">
+        <div class="chartcard"><h2>Still temperature</h2><div class="chartbox"><canvas id="cTemp"></canvas></div>
+          <p class="cap">The temperature rises during heat-up, levels off at the bubble point, then climbs slowly as the alcohol is stripped out of the pot.</p></div>
+        <div class="chartcard"><h2>Composition against distillate collected</h2><div class="chartbox"><canvas id="cComp"></canvas></div>
+          <p class="cap">Alcohol mole fraction. The vapour (instantaneous distillate) is always richer than the pot. Both fall as the run goes on.</p></div>
+      </div>
+    </div>
+    <hr class="sep">
+    
+    <div class="panel" data-panel="fractions">
+      <h2>Fractions table</h2>
+      <p class="note">This is your results sheet. The <b>true</b> columns come from the simulation. The <b>measured</b> columns are what you would record: a refractive index reading with instrument noise, converted to %v/v using <i>your</i> calibration curve.</p>
+      <p class="note" id="riWarn" hidden></p>
+      <div class="tablewrap"><table id="fracTable"></table></div>
+      <div class="controls"><button class="btn" id="btnCsv">Copy data as CSV</button><span class="muted" id="csvMsg" style="font-size:.85rem"></span></div>
+      <textarea id="csvBox" class="csvbox" hidden readonly aria-label="CSV data"></textarea>
+    </div>
+  </section>
+  </section>
+
+  <section class="view" data-view="lessons" hidden>
+    <div class="viewhead"><h1>Lessons</h1><p>Ten guided experiments. Each one answers a single question about the practical, sets up the still for you, and explains what you should see.</p></div>
+    
+    <div class="panel" data-panel="lessons">
+      <p class="note">Each lesson answers one question about the practical. <b>Watch live</b> loads the settings and runs the still in front of you. <b>Run and compare</b> simulates every variant instantly, saves them, and opens the tab where the difference shows. Running a comparison replaces your saved runs.</p>
+      <div class="lessons" id="lessonGrid"></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="analysis" hidden>
+    <div class="viewhead"><h1>Analysis</h1><p>Work through sections 3, 7.1 and 7.2 of the lab sheet using the current run: the refractometer calibration, the Rayleigh equation and the equilibrium data.</p></div>
+    <p class="ctx" id="ctxAnalysis"></p>
+    <div class="subtabs" data-for="analysis"><button data-tab="refr" aria-pressed="false">Refractometer</button><button data-tab="ray" aria-pressed="true">Rayleigh analysis</button><button data-tab="vle" aria-pressed="false">Equilibrium diagrams</button></div>
+    <section class="card">
+    
+    <div class="panel" data-panel="refr">
+      <div class="grid2">
+        <div class="chartcard"><h2>Calibration curve</h2><div class="chartbox"><canvas id="cCal"></canvas></div>
+          <p class="cap">Refractive index at 20 °C of the calibration standards. With linear interpolation (the default) each pair of neighbouring standards is joined by a straight line, and each sample's composition is read off that line, exactly as you would from a calibration table. The distillate fractions are plotted at the compositions read off the curve.</p></div>
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+          <div class="tablewrap"><table id="calTable"></table></div>
+          <div class="note" id="calNote"></div>
+          <div class="field"><label for="calSetSel">Calibration standards</label>
+            <select id="calSetSel"><option value="lab">Lab sheet set: 0, 10, 30, 50, 70, 90, 100 %v/v</option><option value="ten" selected>Every 10 %v/v (11 standards)</option><option value="five">Every 5 %v/v (21 standards)</option></select></div>
+          <div class="field"><label for="calMethodSel">How compositions are read off the curve</label>
+            <select id="calMethodSel"><option value="interp" selected>Linear interpolation between standards</option><option value="poly">Fitted polynomial equation (4th order)</option></select></div>
+          <div class="controls"><button class="btn" id="btnRecal">Re-measure the standards</button></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="panel" data-panel="ray">
+      <div class="eq">F = W + D &nbsp;&nbsp;|&nbsp;&nbsp; F·x<sub>F</sub> = W·x<sub>W</sub> + D·x<sub>D,avg</sub> &nbsp;&nbsp;|&nbsp;&nbsp; ln(W/F) = ∫<sub>x<sub>F</sub></sub><sup>x<sub>W</sub></sup> dx / (y* − x)</div>
+      <div id="rayBody"></div>
+      <div class="grid2">
+        <div class="chartcard"><h2>Rayleigh integrand</h2><div class="chartbox"><canvas id="cRay"></canvas></div>
+          <p class="cap">1/(y* − x) between x<sub>W</sub> and x<sub>F</sub>, using equilibrium data. The shaded area is the integral, and it should equal −ln(W/F).</p></div>
+        <div class="note" id="rayNote" style="align-self:start"></div>
+      </div>
+    </div>
+    
+    <div class="panel" data-panel="vle">
+      <div class="grid2">
+        <div class="chartcard"><h2>T–x–y diagram</h2><div class="chartbox"><canvas id="cTxy"></canvas></div>
+          <p class="cap" id="txyCap"></p></div>
+        <div class="chartcard"><h2>x–y diagram</h2><div class="chartbox"><canvas id="cXy"></canvas></div>
+          <p class="cap">Equilibrium curve against the 45° line. The orange trace is the path your still actually followed. It sits below the equilibrium curve when the still efficiency is under 100% or when liquid is entrained.</p></div>
+      </div>
+    </div>
+    </section>
+  </section>
+
+  <section class="view" data-view="compare" hidden>
+    <div class="viewhead"><h1>Compare</h1><p>Put runs side by side, or run a factorial design to see which settings matter most.</p></div>
+    <div class="subtabs" data-for="compare"><button data-tab="compare" aria-pressed="true">Compare runs</button><button data-tab="doe" aria-pressed="false">Factorial design</button></div>
+    <section class="card">
+    
+    <div class="panel" data-panel="compare">
+      <div class="controls"><button class="btn primary" id="btnSave">Save this run</button><button class="btn" id="btnClearRuns">Clear saved runs</button><span class="muted" style="font-size:.85rem">Change one setting, run again and save, then compare. Up to 6 runs are overlaid.</span></div>
+      <div class="chartcard"><h2>Fraction purity by run</h2><div class="chartbox"><canvas id="cCmp"></canvas></div></div>
+      <div class="tablewrap"><table id="runTable"></table></div>
+      <div class="chartcard" id="labBox"><h2>Your lab data</h2>
+        <p class="cap">Paste one fraction per line as <span class="mono">fraction, value</span>. The value can be %v/v (for example 78.5) or a refractive index (for example 1.3752), which is converted with the current calibration curve. Your points appear on the chart above as triangles labelled Your lab data.</p>
+        <textarea id="labData" class="csvbox" style="height:110px" aria-label="Your lab data" placeholder="1, 1.3752&#10;2, 1.3748&#10;3, 1.3741"></textarea>
+        <div class="controls"><button class="btn" id="btnLab">Plot my data</button><button class="btn" id="btnLabClear">Remove my data</button><span class="muted" id="labMsg" style="font-size:.85rem"></span></div></div>
+    </div>
+    
+    <div class="panel" data-panel="doe">
+      <p class="note">This is a two-level full factorial design (see section 9.1.3 of the lab guide). Choose two or three factors and set their low and high levels. Every combination is simulated instantly, with the other settings taken from the panel on the left. Main effects and two-factor interactions are then calculated for each response.</p>
+      <div class="tablewrap"><table id="doeSetup"></table></div>
+      <div class="controls"><button class="btn primary" id="btnDoe">Run factorial design</button><span class="muted" id="doeMsg" style="font-size:.85rem"></span></div>
+      <div id="doeOut" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+    </section>
+  </section>
+
+  <section class="view" data-view="help" hidden>
+    <div class="viewhead"><h1>Help</h1><p>How to use the simulator, and what sits behind the numbers.</p></div>
+    <section class="card" style="display:flex;flex-direction:column;gap:14px">
+      <h2>Getting started</h2>
+      <ol class="steps">
+        <li><b>Set up</b> the mixture, heater and cooling water on the Lab tab. The defaults follow the lab sheet, so you can leave them as they are for a first run.</li>
+        <li><b>Press Start</b> and watch the apparatus, live readings and graphs. Press Finish instantly to skip to the end.</li>
+        <li><b>Read your fractions</b> in the table under the graphs, then open <b>Analysis</b> for the refractometer calibration, the Rayleigh equation and the equilibrium diagrams.</li>
+        <li><b>Learn why</b> with the <b>Lessons</b> tab. Each lesson changes one thing and explains the result.</li>
+      </ol>
+      <div><button class="btn primary" id="btnTour">Take the guided tour</button></div>
+    </section>
+    <section class="card" style="display:flex;flex-direction:column;gap:12px">
+      <h2>What each tab is for</h2>
+      <dl class="taburl">
+        <dt>Lab</dt><dd>Set up and run the still. The live graphs and fractions table are directly below the apparatus.</dd>
+        <dt>Lessons</dt><dd>Ten guided experiments, such as why the heater is turned down and what boiling chips do.</dd>
+        <dt>Analysis</dt><dd>Refractometer calibration, Rayleigh equation and mass balances, and T–x–y and x–y diagrams for the current run.</dd>
+        <dt>Compare</dt><dd>Saved runs side by side, your own lab data, and the factorial design tool.</dd>
+        <dt>Help</dt><dd>This page, the guided tour and the model notes.</dd>
+      </dl>
+    </section>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px">
+      <h2>References</h2>
+      <p class="note" style="max-width:none">These are the standard sources for the theory used here. The physical-property constants were entered from standard tabulated values, and the refractive-index and density tables are approximate. Check every number you quote in your report against a primary source, and cite that source rather than this simulator.</p>
+      <ol class="steps" style="max-width:none;font-size:.92rem">
+        <li><b>Rayleigh equation.</b> Lord Rayleigh (J.W. Strutt) (1902) 'On the distillation of binary mixtures', <i>Philosophical Magazine</i>, Series 6, 4(23), pp. 521–537.</li>
+        <li><b>Batch distillation theory and the graphical or numerical Rayleigh integral.</b> Wankat, P.C. (2012) <i>Separation Process Engineering</i>. 3rd edn. Upper Saddle River: Prentice Hall, chapter 9.</li>
+        <li>Seader, J.D., Henley, E.J. and Roper, D.K. (2011) <i>Separation Process Principles</i>. 3rd edn. Hoboken: Wiley, chapter 13.</li>
+        <li>Geankoplis, C.J. (2003) <i>Transport Processes and Separation Process Principles</i>. 4th edn. Upper Saddle River: Prentice Hall (simple batch, or Rayleigh, distillation).</li>
+        <li>McCabe, W.L., Smith, J.C. and Harriott, P. (2005) <i>Unit Operations of Chemical Engineering</i>. 7th edn. New York: McGraw-Hill (distillation chapter).</li>
+        <li><b>Modified Raoult's law and the Van Laar equation.</b> Smith, J.M., Van Ness, H.C. and Abbott, M.M. (2005) <i>Introduction to Chemical Engineering Thermodynamics</i>. 7th edn. New York: McGraw-Hill.</li>
+        <li><b>Antoine constants, densities and refractive indices.</b> Green, D.W. and Perry, R.H. (eds.) (2008) <i>Perry's Chemical Engineers' Handbook</i>. 8th edn. New York: McGraw-Hill. Also Felder, R.M. and Rousseau, R.W. <i>Elementary Principles of Chemical Processes</i>, Antoine table (Appendix B).</li>
+        <li><b>Azeotrope compositions used to fit the Van Laar constants.</b> Horsley, L.H. (1973) <i>Azeotropic Data III</i>. Washington, DC: American Chemical Society (Advances in Chemistry 116).</li>
+        <li><b>Design of experiments.</b> Montgomery, D.C. (2017) <i>Design and Analysis of Experiments</i>. 9th edn. Hoboken: Wiley. The CLB 321 lab guide, appendix 9.1, cites this.</li>
+      </ol>
+      <p class="hint">How the Rayleigh integral is evaluated: y* comes from the equilibrium model at the lab pressure, and ∫ dx/(y* − x) is integrated from x<sub>W</sub> to x<sub>F</sub> by Simpson's rule with 200 intervals. The same integral can be done graphically, as the area under a plot of 1/(y* − x) against x, as shown on the Analysis tab.</p>
+    </section>
+    <section class="card">
+    <h2>About the model</h2>
+    
+    <div class="panel" data-panel="model">
+      <div class="note" style="max-width:none">
+        <p><b>Thermodynamics.</b> The Antoine equation gives pure-component vapour pressures (mmHg, °C). Van Laar activity coefficients give the non-ideality. The constants were fitted to the literature azeotropes at 101.325 kPa (IPA–water x = 0.681 at 80.37 °C, giving A₁₂ = 2.1366 and A₂₁ = 1.1862; ethanol–water x = 0.894 at 78.15 °C, giving A₁₂ = 1.8766 and A₂₁ = 0.9402). Bubble points come from solving Σ γᵢxᵢPᵢˢᵃᵗ = P. The fitted ethanol model matches measured equilibrium data closely, for example y = 0.614 at x = 0.40.</p><br>
+        <p><b>Still.</b> The pot is a single well-mixed liquid. During heat-up, dT/dt = (Q − UA(T − 20))/C<sub>p</sub>. Once boiling, the net heat sets the boil-up rate, V = Q<sub>net</sub>/ΔH<sub>vap</sub>. The vapour leaving is y = x + E(y* − x), where E is the still efficiency. A high boil-up rate also entrains liquid droplets of pot composition, and the entrained fraction grows with the square of the vapour rate. That is why the procedure turns the heater down. A condenser with low or no cooling water lets part of the vapour escape.</p><br>
+        <p><b>Bumping.</b> Without boiling chips the liquid superheats by about 3 °C before it boils violently. After that it bumps at random, splashing 0.5–2 mL of pot liquid over into the fraction being collected.</p><br>
+        <p><b>Refractometer.</b> Refractive index against mass fraction at 20 °C is interpolated from approximate handbook values. Readings get Gaussian noise at the selected precision. Ethanol–water has a refractive index <i>maximum</i> near 80 wt%, so one reading can match two compositions. The page flags this and resolves it with the still-head temperature, picking the root whose dew point (for fractions) or bubble point (for pot samples) matches.</p><br>
+        <p><b>Volumes.</b> Liquid volumes come from real mixture densities at 20 °C, so mixing alcohol and water contracts. Mixing 125 mL of IPA with 125 mL of water gives about 240 mL. Feed and fraction strengths are quoted as %v/v on the prepared basis (pure volumes before mixing), the same way calibration standards are made.</p><br>
+        <p><b>Condenser holdup.</b> The condenser and adapter hold about 1.2 mL of liquid. The first drop arrives only after the walls are wet, and that liquid never reaches a fraction, so the mole balance closes slightly below 100%.</p><br>
+        <p><b>Sample temperature.</b> Refractive index falls with temperature (about −0.0004 per °C for the alcohols, −0.0001 for water). The standards are read at 20 °C, so reading warm fractions makes them look weaker than they are.</p><br>
+        <p><b>Flask size.</b> The mantle power, heat-up mass and heat-loss area scale with the flask. A flask more than about 70% full foams and sprays liquid into the condenser.</p><br>
+        <p><b>Switching effects off.</b> Every effect above, plus imperfect equilibrium, spray carry-over and heat loss, has its own switch under Real-world effects. With all of them off, the vapour is exactly in equilibrium, volumes add ideally, nothing holds up in the condenser and the refractometer is perfect. That is the textbook still, and it is the case the Rayleigh equation describes.</p><br>
+        <p><b>Calibration.</b> Measured compositions are read off the calibration curve by linear interpolation between neighbouring standards by default, the same as reading a calibration table. A fitted 4th-order polynomial is available for comparison on the Refractometer tab.</p><br>
+        <p><b>Still simplified.</b> The pot is perfectly mixed, the refractive index and density tables are approximate handbook values, and heat capacities and heats of vaporisation do not change with temperature. Use the simulation to understand trends and plan runs. Report your real lab data as your results.</p>
+      </div>
+    </div>
+    </section>
+  </section>
+  <footer>The physics runs in your browser. Nothing is uploaded. Saved runs stay on this page until you reload it.</footer>
+</div>
+
+<div id="tourBlock" class="tour-block" hidden></div>
+<div id="tourHole" class="tour-hole" hidden></div>
+<div id="tourCard" class="tour-card" hidden role="dialog" aria-labelledby="tourTitle"><span class="step" id="tourStep"></span><h2 id="tourTitle"></h2><p id="tourBody"></p>
+  <div class="controls"><button class="btn" id="tourBack">Back</button><button class="btn primary" id="tourNext">Next</button><button class="btn" id="tourEnd" style="margin-left:auto">End tour</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+/* ---------------- Thermodynamic data ---------------- */
+const WATER={A:[8.07131,1730.63,233.426],MW:18.015,rho:0.998,Hv:40660,cp:75.3};
+const SYS={
+  ipa:{key:'ipa',name:'Isopropyl alcohol',short:'IPA',A:[8.87829,2010.33,252.636],vl:[2.1366,1.1862],MW:60.10,rho:0.786,dndT:-0.00038,dens:[[0,0.9982],[10,0.9839],[20,0.9719],[30,0.9560],[40,0.9358],[50,0.9139],[60,0.8911],[70,0.8679],[80,0.8446],[90,0.8202],[100,0.7855]],Hv:39850,cp:155,
+       ri:[[0,1.3330],[10,1.3411],[20,1.3494],[30,1.3572],[40,1.3639],[50,1.3683],[60,1.3713],[70,1.3740],[80,1.3758],[90,1.3770],[100,1.3776]]},
+  eth:{key:'eth',name:'Ethanol',short:'EtOH',A:[8.11220,1592.864,226.184],vl:[1.8766,0.9402],MW:46.07,rho:0.789,dndT:-0.00040,dens:[[0,0.9982],[10,0.9819],[20,0.9686],[30,0.9538],[40,0.9352],[50,0.9138],[60,0.8911],[70,0.8677],[80,0.8434],[90,0.8180],[100,0.7893]],Hv:38560,cp:112,
+       ri:[[0,1.3330],[10,1.3395],[20,1.3469],[30,1.3535],[40,1.3583],[50,1.3616],[60,1.3638],[70,1.3652],[80,1.3658],[90,1.3650],[100,1.3614]]}
+};
+const vm=c=>c.MW/c.rho; // mL/mol
+const psat=(A,T)=>Math.pow(10,A[0]-A[1]/(T+A[2]))*0.1333224; // kPa
+function gam(s,x){const [a,b]=s.vl,x2=1-x,d=a*x+b*x2||1e-12;return [Math.exp(a*Math.pow(b*x2/d,2)),Math.exp(b*Math.pow(a*x/d,2))];}
+function bubble(s,x,P){x=Math.min(1,Math.max(0,x));const g=gam(s,x);let lo=0,hi=140;
+  for(let i=0;i<44;i++){const T=(lo+hi)/2;const p=x*g[0]*psat(s.A,T)+(1-x)*g[1]*psat(WATER.A,T);if(p>P)hi=T;else lo=T;}
+  const T=(lo+hi)/2;return {T,y:Math.min(1,x*g[0]*psat(s.A,T)/P)};}
+function dewT(s,y,P){ // solve for x with bubble y = target (below azeotrope)
+  const az=azeo(s,P);let lo=0,hi=az?az.x:1;for(let i=0;i<40;i++){const m=(lo+hi)/2;if(bubble(s,m,P).y<y)lo=m;else hi=m;}return bubble(s,(lo+hi)/2,P).T;}
+const _az={};function azeo(s,P){const k=s.key+P;if(k in _az)return _az[k];return _az[k]=azeo0(s,P);}
+function azeo0(s,P){let prev=null;for(let x=0.3;x<0.999;x+=0.002){const b=bubble(s,x,P);if(b.y<x){return {x,T:b.T};}prev=b;}return null;}
+const volPct=(s,x)=>{const a=x*vm(s),b=(1-x)*vm(WATER);return a+b>0?100*a/(a+b):0;};
+const xFromVol=(s,p)=>{const a=p/100/vm(s),b=(1-p/100)/vm(WATER);return a/(a+b);};
+const massPct=(s,x)=>{const a=x*s.MW,b=(1-x)*WATER.MW;return a+b>0?100*a/(a+b):0;};
+function interp(t,w){if(w<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++){if(w<=t[i][0]){const f=(w-t[i-1][0])/(t[i][0]-t[i-1][0]);return t[i-1][1]+f*(t[i][1]-t[i-1][1]);}}return t[t.length-1][1];}
+function riTrue(s,x,Tm){const w=massPct(s,x);const dn=(w/100)*s.dndT+(1-w/100)*(-0.0001);return interp(s.ri,w)+dn*((Tm==null?20:Tm)-20);}
+const rhoMix=(s,x)=>interp(s.dens,massPct(s,x));
+function molVol(s,n1,n2){const n=n1+n2;if(n<=0)return 0;if(s.ideal)return n1*vm(s)+n2*vm(WATER);return (n1*s.MW+n2*WATER.MW)/rhoMix(s,n1/n);}
+function molesFromVol(s,V,pct){if(s.ideal)return {n1:V*pct/100/vm(s),n2:V*(1-pct/100)/vm(WATER)};const x=xFromVol(s,pct);const n=V*rhoMix(s,x)/(x*s.MW+(1-x)*WATER.MW);return {n1:n*x,n2:n*(1-x)};}
+
+/* ---------------- RNG ---------------- */
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gaussFactory(r){return ()=>{let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};}
+
+/* ---------------- Calibration ---------------- */
+function polyfit(xs,ys,deg){const n=deg+1,M=Array.from({length:n},()=>Array(n+1).fill(0));
+  for(let k=0;k<xs.length;k++){for(let i=0;i<n;i++){for(let j=0;j<n;j++)M[i][j]+=Math.pow(xs[k],i+j);M[i][n]+=ys[k]*Math.pow(xs[k],i);}}
+  for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;[M[i],M[p]]=[M[p],M[i]];
+    for(let r=0;r<n;r++){if(r===i)continue;const f=M[r][i]/M[i][i];for(let c=i;c<=n;c++)M[r][c]-=f*M[i][c];}}
+  return M.map((row,i)=>row[n]/row[i]);}
+const polyval=(c,x)=>c.reduce((s,a,i)=>s+a*Math.pow(x,i),0);
+const CAL_SETS={lab:[0,10,30,50,70,90,100],ten:[0,10,20,30,40,50,60,70,80,90,100],five:Array.from({length:21},(_,i)=>i*5)};
+let calSet='ten',calMethod='interp';
+function calRI(cal,p){if(cal.method==='poly')return polyval(cal.coef,p/100);const st=cal.stds;if(p<=st[0].p)return st[0].ri;
+  for(let i=1;i<st.length;i++)if(p<=st[i].p){const a=st[i-1],b=st[i];return a.ri+(b.ri-a.ri)*(p-a.p)/(b.p-a.p);}return st[st.length-1].ri;}
+function makeCal(s,noiseSd,gauss,set,method){set=set||calSet;method=method||calMethod;const stds=CAL_SETS[set].map(p=>({p,ri:riTrue(s,xFromVol(s,p))+noiseSd*gauss()}));
+  return {stds,set,method,coef:polyfit(stds.map(d=>d.p/100),stds.map(d=>d.ri),4)};}
+function invertCal(cal,ri,prefer){const roots=[];let prevF=calRI(cal,0)-ri;
+  for(let p=0.05;p<=100.0001;p+=0.05){const f=calRI(cal,p)-ri;if(prevF===0||prevF*f<0){roots.push(p-0.05*f/(f-prevF));}prevF=f;}
+  let best=null,amb=false;
+  if(!roots.length){let bp=0,bd=1e9;for(let p=0;p<=100;p+=0.1){const d=Math.abs(calRI(cal,p)-ri);if(d<bd){bd=d;bp=p;}}best=bp;}
+  else{best=prefer==='rich'?Math.max(...roots):Math.min(...roots);amb=roots.length>1&&(Math.max(...roots)-Math.min(...roots))>3;}
+  return {p:Math.max(0,Math.min(100,best)),amb,roots,out:!roots.length};}
+
+/* ---------------- Simulation ---------------- */
+const maxW=f=>({250:200,500:300,1000:450})[f]||300;const HOLD=1.2;
+const FX=['eq','entrain','loss','hold','contract','foam','noise','temp'];
+const FXNAME={eq:'imperfect equilibrium',entrain:'spray carry-over',loss:'heat loss',hold:'condenser holdup',contract:'volume contraction',foam:'foaming',noise:'reading error',temp:'sample temperature'};
+function effective(c){const fx=Object.assign({},...FX.map(k=>({[k]:true})),c.fx||{});return {...c,fx,eff:fx.eq?c.eff:1,ua:fx.loss?c.ua:0,noise:fx.noise?c.noise:0,riT:fx.temp?c.riT:20};}
+function Sim(cfg,seed){
+  cfg=effective(cfg);const s={...SYS[cfg.sys],ideal:!cfg.fx.contract};this.cfg=cfg;this.s=s;this.seed=seed;
+  const r=mulberry(seed);this.r=r;this.gauss=gaussFactory(mulberry(seed*7+3));
+  const m0=molesFromVol(s,cfg.charge,cfg.feed);this.n1=m0.n1;this.n2=m0.n2;
+  this.F={n1:this.n1,n2:this.n2};this.T=20;this.t=0;this.phase='idle';
+  this.tubes=[];this.cur={n1:0,n2:0,t0:0,bump:false};this.lost={n1:0,n2:0};this.energy=0;
+  this.hist=[];this.lastHist=-99;this.events=[];this.bumpTimer=30+60*r();this.superheated=false;
+  this.inst={power:0,loss:0,V:0,y:0,ystar:0,rate:0,eps:0};this.bumpFlash=0;this.boilStart=null;
+  this.cal=makeCal(s,cfg.noise,this.gauss,calSet,calMethod);this.riNoise=[];for(let i=0;i<80;i++)this.riNoise.push(this.gauss());
+  this.collected=0;this.doneReason='';this.hold={n1:0,n2:0};this.firstDrop=null;
+}
+Sim.prototype.x=function(){const n=this.n1+this.n2;return n>0?this.n1/n:0;};
+Sim.prototype.potVol=function(){return molVol(this.s,this.n1,this.n2);};
+Sim.prototype.log=function(msg,kind){this.events.push({t:this.t,msg,kind:kind||''});};
+Sim.prototype.heaterFrac=function(){const c=this.cfg;if(c.proc&&this.phase!=='boiling'&&!this.boilStart)return 1;return c.heater/100;};
+Sim.prototype.capture=function(){return {on:1,low:0.75,off:0.12}[this.cfg.cool];};
+Sim.prototype.addToTube=function(n1,n2){this.cur.n1+=n1;this.cur.n2+=n2;};
+Sim.prototype.entrain=function(mL,why){const x=this.x(),n=mL/molVol(this.s,x,1-x);const d1=Math.min(this.n1,n*x),d2=Math.min(this.n2,n*(1-x));
+  this.n1-=d1;this.n2-=d2;this.addToTube(d1,d2);this.cur.bump=true;this.bumpFlash=1.2;this.log(why,'warn');};
+Sim.prototype.step=function(dt){
+  if(this.phase==='done')return;if(this.phase==='idle')this.phase='heating';
+  const s=this.s,c=this.cfg,x=this.x(),bp=bubble(s,x,c.P);
+  const power=maxW(c.flask)*this.heaterFrac(),loss=c.ua*Math.pow(c.flask/500,0.667)*(this.T-20),Cp=this.n1*s.cp+this.n2*WATER.cp+180*c.flask/500;
+  this.energy+=power*dt;this.inst.power=power;this.inst.loss=loss;
+  const onset=bp.T+(c.chips?0:3);
+  if(this.phase==='heating'){
+    this.T+=(power-loss)*dt/Cp;this.inst.V=0;this.inst.rate=0;
+    if(this.T>=onset){
+      if(!this.boilStart){this.boilStart=this.t;this.log(`Bubble point reached at ${bp.T.toFixed(1)} °C. Boiling started.`,'good');
+        if(c.proc)this.log(`Heater turned down to ${c.heater}% to keep a steady, controlled boil.`);}
+      if(!c.chips&&!this.superheated){this.superheated=true;this.log(`No boiling chips, so the liquid superheated to ${this.T.toFixed(1)} °C before flashing.`,'crit');this.entrain(3,'Violent bump: about 3 mL of pot liquid splashed into the receiver.');}
+      this.T=bp.T;this.phase='boiling';
+    }
+  }else if(this.phase==='boiling'){
+    this.T=bp.T;const qn=power-loss;this.cur.TT=(this.cur.TT||0)+this.T*dt;this.cur.tb=(this.cur.tb||0)+dt;
+    if(qn<=0.5){this.phase='heating';this.T-=0.05;this.inst.V=0;this.log('Heat input no longer exceeds heat loss, so boiling stopped. Increase the heater.','warn');}
+    else{
+      const Hv=bp.y*s.Hv+(1-bp.y)*WATER.Hv;const V=qn/Hv;
+      const y=x+c.eff*(bp.y-x);const over=c.fx.foam&&this.potVol()>0.7*c.flask;const eps=Math.min(0.4,(c.fx.entrain?0.05*Math.pow(qn/(150*maxW(c.flask)/300),2):0)+(over?0.12:0));if(over&&!this._overWarn){this._overWarn=true;this.log('The flask is more than about 70% full. Foam and spray are being carried into the condenser. Use a bigger flask or a smaller charge.','warn');}
+      let dn=V*dt;const d1=Math.min(this.n1,dn*(y*(1)) ),d2=Math.min(this.n2,dn*(1-y));
+      // entrained droplets at pot composition
+      const de=dn*eps,e1=Math.min(this.n1-d1,de*x),e2=Math.min(this.n2-d2,de*(1-x));
+      this.n1-=d1+e1;this.n2-=d2+e2;
+      const cap=this.capture();
+      this.hold.n1+=d1*cap+e1;this.hold.n2+=d2*cap+e2;this.lost.n1+=d1*(1-cap);this.lost.n2+=d2*(1-cap);
+      const hv=molVol(s,this.hold.n1,this.hold.n2);let out=0;
+      const HL=c.fx.hold?HOLD:0;if(hv>HL){const f=(hv-HL)/hv;const o1=this.hold.n1*f,o2=this.hold.n2*f;this.hold.n1-=o1;this.hold.n2-=o2;this.addToTube(o1,o2);out=hv-HL;
+        if(this.firstDrop==null){this.firstDrop=this.t;this.log(HL?`First drop of distillate, ${(this.t-this.boilStart).toFixed(0)} s after boiling began. The condenser walls had to wet first.`:'First drop of distillate (condenser holdup is switched off).');}}
+      const yEff=(d1+e1)/(d1+d2+e1+e2||1);
+      this.inst.V=V;this.inst.y=yEff;this.inst.ystar=bp.y;this.inst.eps=eps;
+      this.inst.rate=out/dt*60;
+      if(!c.chips){this.bumpTimer-=dt;if(this.bumpTimer<=0){this.bumpTimer=40+80*this.r();this.entrain(0.5+1.5*this.r(),`Bump: pot liquid splashed into fraction ${this.tubes.length+1}.`);}}
+    }
+  }
+  this.t+=dt;
+  const cv=molVol(s,this.cur.n1,this.cur.n2);
+  if(cv>=c.frac){const tube={n1:this.cur.n1,n2:this.cur.n2,t0:this.cur.t0,t1:this.t,bump:this.cur.bump,Th:this.cur.tb?this.cur.TT/this.cur.tb:this.T};tube.vol=cv;tube.x=tube.n1/(tube.n1+tube.n2);
+    this.tubes.push(tube);this.collected+=cv;this.log(`Fraction ${this.tubes.length} collected: ${volPct(s,tube.x).toFixed(1)} %v/v ${s.short}.`);
+    this.cur={n1:0,n2:0,t0:this.t,bump:false};
+    if(this.tubes.length>=c.nfrac){this.finish(`Collected ${c.nfrac} fractions. Heater off.`);}}
+  if(this.cfg.cool==='off'&&this.phase==='boiling'&&!this._coolWarn){this._coolWarn=true;this.log('Most of the vapour is passing straight through the condenser. Flammable alcohol vapour is escaping into the lab. Turn on the cooling water.','crit');}
+  if(this.phase!=='done'&&this.potVol()<Math.max(15,0.12*c.charge)){this.finish('Pot nearly dry. Heater switched off. Never boil a flask to dryness.','crit');}
+  if(this.phase!=='done'&&this.t>4*3600){this.finish('Stopped after 4 hours. The heater is too weak to distil at a useful rate.','warn');}
+  if(this.t-this.lastHist>=5||this.phase==='done'){this.lastHist=this.t;
+    this.hist.push({t:this.t,T:this.T,x:this.x(),y:this.phase==='boiling'?this.inst.y:null,ystar:this.phase==='boiling'?this.inst.ystar:null,D:this.collected+molVol(s,this.cur.n1,this.cur.n2)});}
+};
+Sim.prototype.finish=function(msg,kind){if(this.phase==='done')return;this.phase='done';this.doneReason=msg;this.log(msg,kind||'good');this.inst.V=0;this.inst.rate=0;this.inst.power=0;
+  const cv=molVol(this.s,this.cur.n1,this.cur.n2);
+  if(cv>0.3){const tube={n1:this.cur.n1,n2:this.cur.n2,t0:this.cur.t0,t1:this.t,bump:this.cur.bump,partial:true,Th:this.cur.tb?this.cur.TT/this.cur.tb:this.T};tube.vol=cv;tube.x=tube.n1/(tube.n1+tube.n2);this.tubes.push(tube);this.collected+=cv;}
+  this.cur={n1:0,n2:0,t0:this.t,bump:false};};
+Sim.prototype.runToEnd=function(){let g=0;while(this.phase!=='done'&&g<40000){this.step(1);g++;}};
+
+/* measured values */
+Sim.prototype.measure=function(xTrue,idx,Tref,kind){const s=this.s,P=this.cfg.P;const ri=riTrue(s,xTrue,(kind==='vap'||(kind==='liq'&&Tref!=null))?this.cfg.riT:20)+this.cfg.noise*this.riNoise[idx%this.riNoise.length];const inv=invertCal(this.cal,ri,'lean');
+  let p=inv.p;if(inv.amb&&Tref!=null){const az=azeo(s,P);let best=1e9;for(const r of inv.roots){const x=xFromVol(s,r);
+    const Tc=kind==='vap'?dewT(s,Math.min(x,az?az.x-1e-3:1),P):bubble(s,x,P).T;const d=Math.abs(Tc-Tref);if(d<best){best=d;p=r;}}}
+  p=Math.max(0,Math.min(100,p));return {ri,p,amb:inv.amb,roots:inv.roots,out:inv.out,x:xFromVol(s,p)};};
+Sim.prototype.summary=function(){const s=this.s;const D1=this.tubes.reduce((a,t)=>a+t.n1,0),D2=this.tubes.reduce((a,t)=>a+t.n2,0);
+  const xD=D1/(D1+D2||1);const rec=100*D1/this.F.n1;
+  return {xDavg:xD,pDavg:volPct(s,xD),recovery:rec,time:this.t/60,first:this.tubes[0]?volPct(s,this.tubes[0].x):NaN,
+    residue:volPct(s,this.x()),nf:this.tubes.length,energy:this.energy/1000,lostmL:molVol(s,this.lost.n1,this.lost.n2),holdmL:molVol(s,this.hold.n1,this.hold.n2),Dvol:this.collected};};
+
+/* ---------------- UI state ---------------- */
+let sysKey='ipa',sim=null,running=false,seedCounter=1,saved=[],labData=[];
+function readCfg(){return {sys:sysKey,feed:+$('#feed').value,charge:+$('#charge').value,P:+$('#press').value,chips:$('#chips').checked,
+  heater:+$('#heater').value,proc:$('#proc').checked,cool:$('#cool').value,frac:+$('#frac').value,nfrac:+$('#nfrac').value,
+  eff:+$('#eff').value/100,ua:+$('#loss').value,noise:+$('#noise').value,flask:+$('#flask').value,riT:+$('#riT').value,fx:Object.fromEntries(FX.map(k=>[k,$('#fx_'+k).checked]))};}
+const LOCKED=['#fx_eq','#fx_entrain','#fx_loss','#fx_hold','#fx_contract','#fx_foam','#fx_noise','#fxAllOn','#fxAllOff','#fxCompare','#flask','#feed','#charge','#press','#chips','#frac','#eff','#loss','#noise','#sysIpa','#sysEth'];
+let isLocked=false;
+function setLocked(on){isLocked=on;LOCKED.forEach(id=>{$(id).disabled=on;});$('#lockhint').style.visibility=on?'visible':'hidden';syncFx();}
+function syncFx(){let n=0;FX.forEach(k=>{const on=$('#fx_'+k).checked;if(on)n++;const row=$(`.fxrow[data-fx="${k}"]`);row.classList.toggle('off',!on);
+    row.querySelectorAll('.field select,.field input').forEach(el=>{el.disabled=!on||(isLocked&&k!=='temp');});});
+  $('#fxAllOn').setAttribute('aria-pressed',n===FX.length);$('#fxAllOff').setAttribute('aria-pressed',n===0);
+  $('#fxCount').textContent=n===FX.length?'Everything that goes wrong in a real lab is switched on.':n===0?'A perfect textbook still. The Rayleigh equation should match almost exactly.':`Custom: ${n} of 8 effects on.`;
+  if(n>0&&n<FX.length)$('#fxDetails').open=true;}
+function fmtTime(sec){sec=Math.max(0,Math.round(sec));const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}`;}
+function updateOutputs(){const s=SYS[sysKey];const p=+$('#feed').value;const fl=+$('#flask').value;$('#charge').max=Math.round(0.9*fl/10)*10;
+  $('#feedOut').textContent=`${p} %v/v (x = ${xFromVol(s,p).toFixed(3)})`;$('#chargeOut').textContent=`${$('#charge').value} mL`;
+  $('#heaterOut').textContent=`${$('#heater').value}% · ${Math.round(maxW(+$('#flask').value)*$('#heater').value/100)} W`;$('#nfracOut').textContent=`${$('#nfrac').value} fractions`;
+  $('#effOut').textContent=`${$('#eff').value}%`;}
+function newSim(){sim=new Sim(readCfg(),seedCounter++);running=false;$('#btnRun').textContent='Start';setLocked(false);
+  sim.log(`Charged ${sim.cfg.charge} mL of ${sim.cfg.feed} %v/v ${sim.s.short}–water at ${sim.cfg.P} kPa. Feed bubble point ${bubble(sim.s,sim.x(),sim.cfg.P).T.toFixed(1)} °C.`);
+  if(sim.cfg.charge>0.7*sim.cfg.flask)sim.log(`The ${sim.cfg.charge} mL charge fills more than 70% of the ${sim.cfg.flask} mL flask. Expect foaming and carry-over. The usual rule is to fill no more than half to two-thirds.`,'warn');
+  if(sim.cfg.charge<0.15*sim.cfg.flask)sim.log(`The charge only just covers the bottom of the ${sim.cfg.flask} mL flask. The run will stop early to avoid boiling it dry.`,'warn');
+  bubblesArr.length=0;dropsArr.length=0;renderAll(true);}
+
+/* ---------------- Apparatus rendering ---------------- */
+const bubblesArr=[],dropsArr=[];const SVGNS='http://www.w3.org/2000/svg';
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function tintFor(p){ // sequential blue ramp, pale = water, dark = alcohol
+  const stops=['#cde2fb','#9ec5f4','#6da7ec','#3987e5','#256abf','#184f95','#0d366b'];const f=Math.max(0,Math.min(1,p/100))*(stops.length-1);const i=Math.min(stops.length-2,Math.floor(f)),u=f-i;
+  const h=c=>[1,3,5].map(k=>parseInt(c.substr(k,2),16));const a=h(stops[i]),b=h(stops[i+1]);return `rgb(${a.map((v,k)=>Math.round(v+(b[k]-v)*u)).join(',')})`;}
+function levelY(vol){const f=Math.min(0.98,vol/sim.cfg.flask);let lo=0,hi=2;for(let i=0;i<30;i++){const m=(lo+hi)/2;if(m*m*(3-m)/4<f)lo=m;else hi=m;}return 250+76-((lo+hi)/2)*76;}
+let lastFrame=performance.now(),lastChart=0,simAcc=0;
+function frame(now){const dtReal=Math.min(0.1,(now-lastFrame)/1000);lastFrame=now;
+  if(running&&sim&&sim.phase!=='done'){const speed=+$('#speed').value;simAcc+=dtReal*speed;const step=speed>=60?1:0.5;let n=0;
+    while(simAcc>=step&&n<400){sim.step(step);simAcc-=step;n++;}
+    if(sim.phase==='done'){running=false;$('#btnRun').textContent='Start';$('#btnRun').disabled=true;}}
+  drawApparatus(dtReal);
+  if(now-lastChart>300){lastChart=now;renderAll(false);}
+  requestAnimationFrame(frame);}
+function drawApparatus(dt){if(!sim)return;const s=sim.s,vol=sim.potVol(),ly=levelY(vol),xp=sim.x();
+  const liq=$('#liquid');liq.setAttribute('y',ly.toFixed(1));liq.setAttribute('height',(330-ly).toFixed(1));
+  $('#potTxt').textContent=`${vol.toFixed(0)} mL`;$('#potTxt').setAttribute('y',Math.min(318,Math.max(ly+18,262)).toFixed(0));
+  const pf=sim.inst.power/maxW(sim.cfg.flask);$('#glow').setAttribute('opacity',(pf*0.9).toFixed(2));
+  const ang=-120+240*(sim.phase==='done'?0:sim.heaterFrac());const rad=ang*Math.PI/180;
+  $('#knob').setAttribute('x2',(225+8*Math.sin(rad)).toFixed(1));$('#knob').setAttribute('y2',(352-8*Math.cos(rad)).toFixed(1));
+  $('#powerTxt').textContent=`${Math.round(sim.inst.power)} W`;
+  const tvap=sim.phase==='boiling'?sim.T:Math.max(20,20+(sim.T-20)*0.25);
+  $('#tTxt').textContent=`${tvap.toFixed(1)} °C`;$('#mercury').setAttribute('y2',(110-Math.min(75,(tvap-15)*0.85)).toFixed(1));
+  const boil=sim.phase==='boiling'?Math.min(1.5,sim.inst.V/0.003):(sim.phase==='heating'&&sim.T>60?0.05:0);
+  $('#vapourG').setAttribute('opacity',(Math.min(1,boil)*0.9).toFixed(2));$('#vapourInCond').setAttribute('opacity',(Math.min(1,boil)*0.8).toFixed(2));
+  const cond=$('#condenser');cond.setAttribute('class','cool-'+sim.cfg.cool);
+  $('#escape').setAttribute('opacity',sim.phase==='boiling'&&sim.cfg.cool!=='on'?(sim.cfg.cool==='off'?1:0.45):0);
+  $('#coolTxt').textContent=sim.cfg.cool==='on'?'Liebig condenser':sim.cfg.cool==='low'?'Condenser: trickle flow':'Condenser: no cooling water';
+  // bubbles
+  const g=$('#bubbles');const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduce&&boil>0&&Math.random()<boil*dt*40){for(let k=0;k<1+Math.floor(boil*3);k++){const bx=100+Math.random()*120;bubblesArr.push({x:bx,y:322-Math.random()*8,r:1.5+Math.random()*3.5*Math.min(1,boil+.3),v:30+Math.random()*50});}}
+  for(const b of bubblesArr){b.y-=b.v*dt;b.x+=Math.sin(b.y/6)*0.3;}
+  for(let i=bubblesArr.length-1;i>=0;i--)if(bubblesArr[i].y<ly)bubblesArr.splice(i,1);
+  while(g.childNodes.length<bubblesArr.length){const c=document.createElementNS(SVGNS,'circle');c.setAttribute('fill','none');c.setAttribute('stroke','var(--panel)');c.setAttribute('stroke-width','1.2');g.appendChild(c);}
+  while(g.childNodes.length>bubblesArr.length)g.removeChild(g.lastChild);
+  bubblesArr.forEach((b,i)=>{const c=g.childNodes[i];c.setAttribute('cx',b.x.toFixed(1));c.setAttribute('cy',b.y.toFixed(1));c.setAttribute('r',b.r.toFixed(1));});
+  $('#liquid').setAttribute('fill',sim.phase==='idle'?'var(--liquid)':'var(--liquid)');
+  // receiving tube
+  const cv=molVol(s,sim.cur.n1,sim.cur.n2),frac=sim.cfg.frac,tubeH=98,capVol=frac*1.6;
+  const fh=Math.min(tubeH+10,(cv/capVol)*(tubeH+10));$('#tubeFill').setAttribute('y',(370-fh).toFixed(1));$('#tubeFill').setAttribute('height',fh.toFixed(1));
+  const cx=sim.cur.n1+sim.cur.n2>0?sim.cur.n1/(sim.cur.n1+sim.cur.n2):0;$('#tubeFill').setAttribute('fill',tintFor(volPct(s,cx)));
+  const my=370-(frac/capVol)*(tubeH+10);$('#tubeMark').setAttribute('y1',my.toFixed(1));$('#tubeMark').setAttribute('y2',my.toFixed(1));$('#tubeMarkTxt').setAttribute('y',(my+3).toFixed(1));$('#tubeMarkTxt').textContent=`${frac} mL mark`;
+  $('#tubeLbl').textContent=sim.phase==='done'?'Run complete':`Fraction ${sim.tubes.length+1}`;
+  // drops
+  const dg=$('#drops');const rate=sim.inst.rate*(+$('#speed').value)/60; // mL per real second
+  if(!reduce&&running&&rate>0&&Math.random()<Math.min(8,rate*12)*dt)dropsArr.push({y:236,v:0});
+  for(const d of dropsArr){d.v+=600*dt;d.y+=d.v*dt;}
+  for(let i=dropsArr.length-1;i>=0;i--)if(dropsArr[i].y>370-fh)dropsArr.splice(i,1);
+  while(dg.childNodes.length<dropsArr.length){const c=document.createElementNS(SVGNS,'ellipse');c.setAttribute('rx','2');c.setAttribute('ry','3');c.setAttribute('fill','var(--water)');c.setAttribute('cx','521');dg.appendChild(c);}
+  while(dg.childNodes.length>dropsArr.length)dg.removeChild(dg.lastChild);
+  dropsArr.forEach((d,i)=>dg.childNodes[i].setAttribute('cy',d.y.toFixed(1)));
+  // bump flash
+  if(sim.bumpFlash>0){sim.bumpFlash-=dt;}$('#splash').setAttribute('opacity',Math.max(0,Math.min(1,sim.bumpFlash)).toFixed(2));
+}
+function renderMiniRack(){const g=$('#miniRack');g.innerHTML='';const last=sim.tubes.slice(-6);
+  last.forEach((t,i)=>{const x=566+i*24;const h=Math.min(1,t.vol/(sim.cfg.frac*1.6))*60;
+    g.insertAdjacentHTML('beforeend',`<path d="M${x},310 L${x},362 A7,7 0 0 0 ${x+14},362 L${x+14},310" class="ap-glass" fill="none" ${t.bump?'style="stroke:var(--warn)"':''}/>
+    <rect x="${x+1}" y="${(369-h).toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="5" fill="${tintFor(volPct(sim.s,t.x))}"/>
+    <text x="${x+7}" y="304" class="ap-small" text-anchor="middle">${sim.tubes.length-last.length+i+1}</text>`);});}
+
+/* ---------------- Readouts, log, rack ---------------- */
+function renderReadouts(){const s=sim.s,x=sim.x(),ph=sim.phase;
+  const rows=[['Elapsed time',fmtTime(sim.t)],['Pot temperature',`${sim.T.toFixed(1)} °C`],['Pot volume',`${sim.potVol().toFixed(0)} mL`],
+    ['Pot alcohol',`${volPct(s,x).toFixed(1)} %v/v`],['Pot mole fraction x',x.toFixed(3)],
+    ['Vapour y (actual)',ph==='boiling'?sim.inst.y.toFixed(3):'—'],['Equilibrium y*',ph==='boiling'?sim.inst.ystar.toFixed(3):'—'],
+    ['Distillate rate',ph==='boiling'?`${sim.inst.rate.toFixed(2)} mL/min`:'—'],['Heater power',`${Math.round(sim.inst.power)} W`],
+    ['Heat loss',`${Math.max(0,sim.inst.loss).toFixed(0)} W`],['Distillate collected',`${(sim.collected+molVol(s,sim.cur.n1,sim.cur.n2)).toFixed(1)} mL`],
+    ['Vapour lost',`${molVol(s,sim.lost.n1,sim.lost.n2).toFixed(1)} mL`],['Condenser holdup',`${molVol(s,sim.hold.n1,sim.hold.n2).toFixed(1)} mL`]];
+  const MAIN=['Pot temperature','Pot alcohol','Distillate collected','Elapsed time'];
+  $('#roMain').innerHTML=MAIN.map(k=>{const r=rows.find(x=>x[0]===k);return `<div class="tile"><span>${k.replace('Pot ','Pot ').replace('Distillate collected','Distillate')}</span><b>${r[1]}</b></div>`;}).join('');
+  $('#readouts').innerHTML=rows.filter(r=>!MAIN.includes(r[0])).map(r=>`<div class="ro"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+  const pill=$('#phasePill');pill.dataset.s=ph;$('#phaseTxt').textContent={idle:'Ready',heating:running?'Heating up':'Paused',boiling:running?'Boiling':'Paused',done:'Complete'}[ph];
+  if(ph==='heating'&&sim.boilStart&&running)$('#phaseTxt').textContent='Not boiling';$('#btnRun2').textContent=$('#btnRun').textContent;$('#btnRun2').disabled=$('#btnRun').disabled;$('#miniPill').dataset.s=sim.phase;$('#miniTxt').textContent=$('#phaseTxt').textContent+(sim.phase==='idle'?'':' · '+fmtTime(sim.t));}
+let logLen=-1;
+function renderLog(){if(sim.events.length===logLen)return;logLen=sim.events.length;
+  $('#log').innerHTML=sim.events.slice(-40).reverse().map(e=>`<div class="${e.kind}"><time>${fmtTime(e.t)}</time>${e.msg}</div>`).join('');}
+let rackLen=-1;
+function renderRack(){if(sim.tubes.length===rackLen)return;rackLen=sim.tubes.length;
+  $('#rack').innerHTML=sim.tubes.length?sim.tubes.map((t,i)=>{const p=volPct(sim.s,t.x);const h=Math.min(100,100*t.vol/(sim.cfg.frac*1.25));
+    return `<div class="tube${t.bump?' bump':''}" title="Fraction ${i+1}: ${p.toFixed(1)} %v/v (true)"><div class="glass"><span style="height:${h}%;background:${tintFor(p)}"></span></div>${i+1}</div>`;}).join('')
+    :'<p class="muted" style="font-size:.85rem">No fractions yet. Press Start to heat the still.</p>';
+  renderMiniRack();}
+
+/* ---------------- Charts ---------------- */
+const C={};
+function baseOpts(xTitle,yTitle,extra){const ink2=css('--ink2'),grid=css('--grid'),muted=css('--muted');
+  return mergeOpts({animation:false,responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},
+    plugins:{legend:{position:'top',align:'start',labels:{color:ink2,boxWidth:12,boxHeight:12,usePointStyle:true,font:{family:'Source Sans 3',size:12}}},
+      tooltip:{backgroundColor:css('--panel'),titleColor:css('--ink'),bodyColor:ink2,borderColor:css('--line'),borderWidth:1,padding:8,bodyFont:{family:'JetBrains Mono',size:11},titleFont:{family:'Source Sans 3',weight:'600'}}},
+    scales:{x:{type:'linear',title:{display:true,text:xTitle,color:ink2,font:{family:'Source Sans 3',size:13,weight:'600'}},grid:{color:grid},border:{color:css('--line')},ticks:{color:muted}},
+            y:{type:'linear',title:{display:true,text:yTitle,color:ink2,font:{family:'Source Sans 3',size:13,weight:'600'}},grid:{color:grid},border:{color:css('--line')},ticks:{color:muted}}}},extra);}
+function mergeOpts(o,extra){if(!extra)return o;const {scales,plugins,...rest}=extra;Object.assign(o,rest);if(plugins)o.plugins={...o.plugins,...plugins};
+  if(scales)for(const k in scales){const keep=o.scales[k]&&o.scales[k].title;o.scales[k]={...o.scales[k],...scales[k]};if(keep&&keep.text)o.scales[k].title=keep;}return o;}
+const line=(label,color,o)=>Object.assign({label,data:[],borderColor:color,backgroundColor:color,borderWidth:2,pointRadius:0,showLine:true,tension:0.15},o||{});
+function buildCharts(){Object.values(C).forEach(c=>c.destroy());
+  if(!window.Chart){return;}
+  Chart.defaults.font.family='Source Sans 3';
+  const s1=css('--s1'),s2=css('--s2'),s3=css('--s3'),muted=css('--muted'),surf=css('--panel');
+  C.temp=new Chart($('#cTemp'),{type:'scatter',data:{datasets:[line('Pot temperature',s2)]},options:baseOpts('Time (min)','Still-head temperature (°C)',{plugins:{...baseOpts().plugins,legend:{display:false}}})});
+  C.comp=new Chart($('#cComp'),{type:'scatter',data:{datasets:[line('Pot liquid x',s1),line('Vapour y (instantaneous distillate)',s2),
+    {label:'Fraction average',data:[],backgroundColor:s3,borderColor:surf,borderWidth:2,pointRadius:5,pointHoverRadius:7,showLine:false}]},
+    options:baseOpts('Cumulative distillate collected (mL)','Alcohol mole fraction (–)',{scales:{...baseOpts().scales,y:{...baseOpts().scales.y,min:0,max:1}}})});
+  C.cal=new Chart($('#cCal'),{type:'scatter',data:{datasets:[line('Calibration curve (linear interpolation)',s1,{tension:0}),{label:'Standards (measured)',data:[],backgroundColor:s2,borderColor:surf,borderWidth:2,pointRadius:6,showLine:false},
+    {label:'Fractions',data:[],backgroundColor:s3,borderColor:surf,borderWidth:2,pointRadius:5,showLine:false}]},
+    options:baseOpts('Alcohol in sample (%v/v)','Refractive index at 20 °C, nD (–)',{scales:{...baseOpts().scales,x:{...baseOpts().scales.x,min:0,max:100}}})});
+  C.ray=new Chart($('#cRay'),{type:'scatter',data:{datasets:[line('1/(y* − x)',s1,{fill:'origin',backgroundColor:s1+'33'})]},
+    options:baseOpts('Pot liquid alcohol mole fraction, x (–)','1/(y* − x) (–)',{plugins:{...baseOpts().plugins,legend:{display:false}}})});
+  C.txy=new Chart($('#cTxy'),{type:'scatter',data:{datasets:[line('Bubble point (liquid)',s1),line('Dew point (vapour)',s2),
+    {label:'Azeotrope',data:[],backgroundColor:muted,borderColor:surf,borderWidth:2,pointRadius:6,pointStyle:'rectRot',showLine:false},
+    {label:'Pot now',data:[],backgroundColor:s3,borderColor:surf,borderWidth:2,pointRadius:7,showLine:false}]},
+    options:baseOpts('Alcohol mole fraction, liquid x or vapour y (–)','Temperature (°C)',{scales:{...baseOpts().scales,x:{...baseOpts().scales.x,min:0,max:1}}})});
+  C.xy=new Chart($('#cXy'),{type:'scatter',data:{datasets:[line('Equilibrium y*',s1),line('45° line',muted,{borderDash:[5,5],borderWidth:1.5}),line('Your still (actual y)',s2,{tension:0}),
+    {label:'Pot now',data:[],backgroundColor:s3,borderColor:surf,borderWidth:2,pointRadius:7,showLine:false}]},
+    options:baseOpts('Liquid alcohol mole fraction, x (–)','Vapour alcohol mole fraction, y (–)',{scales:{x:{...baseOpts().scales.x,min:0,max:1},y:{...baseOpts().scales.y,min:0,max:1}}})});
+  C.cmp=new Chart($('#cCmp'),{type:'scatter',data:{datasets:[]},options:baseOpts('Fraction number (–)','Alcohol in fraction (%v/v)',{scales:{...baseOpts().scales,x:{...baseOpts().scales.x,ticks:{...baseOpts().scales.x.ticks,stepSize:1}}}})});
+  vleKey='';renderAll(true);renderCompare();}
+let vleKey='';
+function renderCharts(){if(!C.temp)return;const s=sim.s,h=sim.hist;
+  C.temp.data.datasets[0].data=h.map(p=>({x:p.t/60,y:p.T}));C.temp.update('none');
+  C.comp.data.datasets[0].data=h.map(p=>({x:p.D,y:p.x}));C.comp.data.datasets[1].data=h.filter(p=>p.y!=null).map(p=>({x:p.D,y:p.y}));
+  let cum=0;C.comp.data.datasets[2].data=sim.tubes.map(t=>{cum+=t.vol;return {x:cum-t.vol/2,y:t.x};});C.comp.update('none');
+  // VLE
+  const key=sim.cfg.sys+sim.cfg.P;if(key!==vleKey){vleKey=key;const bub=[],dew=[],eq=[];for(let i=0;i<=100;i++){const x=i/100,b=bubble(s,x,sim.cfg.P);bub.push({x,y:b.T});dew.push({x:b.y,y:b.T});eq.push({x,y:b.y});}
+    dew.sort((a,b)=>a.x-b.x);C.txy.data.datasets[0].data=bub;C.txy.data.datasets[1].data=dew;C.xy.data.datasets[0].data=eq;C.xy.data.datasets[1].data=[{x:0,y:0},{x:1,y:1}];
+    const az=azeo(s,sim.cfg.P);C.txy.data.datasets[2].data=az?[{x:az.x,y:az.T}]:[];
+    $('#txyCap').textContent=az?`At ${sim.cfg.P} kPa the azeotrope is at x = ${az.x.toFixed(3)} (${volPct(s,az.x).toFixed(1)} %v/v, ${massPct(s,az.x).toFixed(1)} wt%), boiling at ${az.T.toFixed(1)} °C. A simple batch still can never make distillate richer than this. Water boils at ${bubble(s,0,sim.cfg.P).T.toFixed(1)} °C and pure ${s.short} at ${bubble(s,1,sim.cfg.P).T.toFixed(1)} °C.`:'';}
+  const x=sim.x(),b=bubble(s,x,sim.cfg.P);C.txy.data.datasets[3].data=[{x,y:b.T}];C.txy.update('none');
+  C.xy.data.datasets[2].data=h.filter(p=>p.y!=null).map(p=>({x:p.x,y:p.y}));C.xy.data.datasets[3].data=sim.phase==='boiling'?[{x,y:sim.inst.y}]:[{x,y:b.y}];C.xy.update('none');}
+
+/* ---------------- Fractions table ---------------- */
+let fracKey='';
+function renderFractions(force){const key=sim.tubes.length+'|'+sim.phase+'|'+sim.seed;if(key===fracKey&&!force)return;fracKey=key;const s=sim.s;
+  let rows=sim.tubes.map((t,i)=>{const m=sim.measure(t.x,i+2,t.Th,'vap');
+    const flags=[t.bump?'<span class="flag warn">bump</span>':'',m.amb?'<span class="flag crit">2 roots</span>':'',m.out?'<span class="flag warn">off curve</span>':'',t.partial?'<span class="flag warn">partial</span>':''].join(' ');
+    return `<tr><td>${i+1}</td><td>${t.vol.toFixed(1)}</td><td>${fmtTime(t.t0)}–${fmtTime(t.t1)}</td><td>${t.x.toFixed(3)}</td><td>${volPct(s,t.x).toFixed(1)}</td><td>${massPct(s,t.x).toFixed(1)}</td><td>${m.ri.toFixed(4)}</td><td>${m.p.toFixed(1)}</td><td>${(m.p-volPct(s,t.x)).toFixed(1)}</td><td class="txt">${flags}</td></tr>`;});
+  const head=`<tr><th>Fraction</th><th>Volume (mL)</th><th>Collected</th><th>x (true)</th><th>%v/v (true)</th><th>wt% (true)</th><th>n<sub>D</sub> measured</th><th>%v/v measured</th><th>Error</th><th>Notes</th></tr>`;
+  const feedM=sim.measure(sim.F.n1/(sim.F.n1+sim.F.n2),0,null,'liq');
+  const extra=`<tr><td class="txt">Feed</td><td>${sim.cfg.charge.toFixed(1)}</td><td>—</td><td>${(sim.F.n1/(sim.F.n1+sim.F.n2)).toFixed(3)}</td><td>${sim.cfg.feed.toFixed(1)}</td><td>${massPct(s,sim.F.n1/(sim.F.n1+sim.F.n2)).toFixed(1)}</td><td>${feedM.ri.toFixed(4)}</td><td>${feedM.p.toFixed(1)}</td><td>${(feedM.p-sim.cfg.feed).toFixed(1)}</td><td></td></tr>`;
+  let res='';if(sim.phase==='done'){const rm=sim.measure(sim.x(),1,sim.T,'liq');res=`<tr><td class="txt">Residue</td><td>${sim.potVol().toFixed(1)}</td><td>end</td><td>${sim.x().toFixed(3)}</td><td>${volPct(s,sim.x()).toFixed(1)}</td><td>${massPct(s,sim.x()).toFixed(1)}</td><td>${rm.ri.toFixed(4)}</td><td>${rm.p.toFixed(1)}</td><td>${(rm.p-volPct(s,sim.x())).toFixed(1)}</td><td></td></tr>`;}
+  $('#fracTable').innerHTML=`<thead>${head}</thead><tbody>${extra}${rows.join('')}${res}</tbody>`;
+  $('#riWarn').hidden=sim.cfg.riT===20;$('#riWarn').innerHTML=`<b>Samples read at about ${sim.cfg.riT} °C.</b> The calibration was made at 20 °C. Warm samples have a lower refractive index, so the fractions and residue read weaker than they really are. Compare the Error column with a run read at 20 °C.`;}
+function csv(){const s=sim.s;let out='section,fraction,volume_mL,t_start_s,t_end_s,x_true,volpct_true,RI_measured,volpct_measured,bump\n';
+  sim.tubes.forEach((t,i)=>{const m=sim.measure(t.x,i+2,t.Th,'vap');out+=`fraction,${i+1},${t.vol.toFixed(2)},${t.t0.toFixed(0)},${t.t1.toFixed(0)},${t.x.toFixed(4)},${volPct(s,t.x).toFixed(2)},${m.ri.toFixed(5)},${m.p.toFixed(2)},${t.bump?1:0}\n`;});
+  out+='\nsection,time_s,T_C,x_pot,y_vapour,distillate_mL\n';sim.hist.forEach(p=>{out+=`history,${p.t.toFixed(0)},${p.T.toFixed(2)},${p.x.toFixed(4)},${p.y==null?'':p.y.toFixed(4)},${p.D.toFixed(2)}\n`;});
+  out+='\nsection,volpct_standard,RI_measured\n';sim.cal.stds.forEach(d=>{out+=`calibration,${d.p},${d.ri.toFixed(5)}\n`;});return out;}
+
+/* ---------------- Refractometer ---------------- */
+let calKey='';
+function renderCal(force){const key=sim.seed+'|'+sim.tubes.length+'|'+calVersion;if(key===calKey&&!force)return;calKey=key;const s=sim.s;
+  $('#calTable').innerHTML=`<thead><tr><th>Standard (%v/v)</th><th>True n<sub>D</sub></th><th>Measured n<sub>D</sub></th><th>Curve n<sub>D</sub></th></tr></thead><tbody>`+
+    sim.cal.stds.map(d=>`<tr><td>${d.p}</td><td>${riTrue(s,xFromVol(s,d.p)).toFixed(4)}</td><td>${d.ri.toFixed(4)}</td><td>${calRI(sim.cal,d.p).toFixed(4)}</td></tr>`).join('')+'</tbody>';
+  let pk=0,pkp=0;for(let p=0;p<=100;p+=0.5){const v=calRI(sim.cal,p);if(v>pk){pk=v;pkp=p;}}
+  const how=sim.cal.method==='poly'?'Compositions are read from a fitted 4th-order polynomial. A fitted equation smooths out reading noise, but it can bend away from the true curve between standards.':`Compositions are read by linear interpolation between the ${sim.cal.stds.length} standards. Between two standards the true curve is bent, but the interpolation is a straight line, so the error grows where the curve bends sharply and where standards are far apart. Use more standards to reduce it.`;
+  $('#calNote').innerHTML=how+'<br><br>'+(s.key==='eth'?`<b>Watch out:</b> the ethanol–water refractive index peaks at about ${pkp.toFixed(0)} %v/v on your curve, then <i>falls</i> towards pure ethanol. With interpolation, a reading higher than the straight line drawn under the peak matches no composition at all. Those fractions are marked "off curve" and given the nearest point on the curve. Choose standards every 5 %v/v to capture the peak. Distillate near the azeotrope can't be told apart from a weaker mixture by refractive index alone. Fractions marked "2 roots" were resolved the way you would in the lab: by picking the composition whose dew point matches the still-head temperature recorded while that fraction was collected. Record the head temperature for every fraction.`
+    :`The IPA–water refractive index rises steadily but flattens above about 70 %v/v. Near the top of the curve, a small reading error therefore becomes a large concentration error. Try a noisier refractometer setting and watch the errors in the fractions table grow.`);
+  if(!C.cal)return;const fit=[];for(let p=0;p<=100;p+=1)fit.push({x:p,y:calRI(sim.cal,p)});C.cal.data.datasets[0].label=sim.cal.method==='poly'?'Fitted polynomial (4th order)':'Calibration curve (linear interpolation)';
+  C.cal.data.datasets[0].data=fit;C.cal.data.datasets[1].data=sim.cal.stds.map(d=>({x:d.p,y:d.ri}));
+  C.cal.data.datasets[2].data=sim.tubes.map((t,i)=>{const m=sim.measure(t.x,i+2,t.Th,'vap');return {x:m.p,y:m.ri};});C.cal.update('none');}
+let calVersion=0;
+
+/* ---------------- Rayleigh ---------------- */
+function rayIntegral(s,P,xF,xW){const n=200;let sum=0,pts=[];let blow=false;
+  for(let i=0;i<=n;i++){const x=xW+(xF-xW)*i/n;const d=bubble(s,x,P).y-x;let f=d>1e-3?1/d:(blow=true,1000);pts.push({x,y:f});
+    sum+=(i===0||i===n?1:(i%2?4:2))*f;}
+  return {I:-(xF-xW)/n/3*sum,pts,blow};}
+let rayKey='';
+function renderRay(force){const key=sim.seed+'|'+sim.phase;if(key===rayKey&&!force)return;rayKey=key;const s=sim.s,P=sim.cfg.P;
+  if(sim.phase!=='done'){$('#rayBody').innerHTML='<p class="note">Finish the run (or press Finish instantly) to analyse it. The Rayleigh analysis needs the final residue composition.</p>';$('#rayNote').innerHTML='';if(C.ray){C.ray.data.datasets[0].data=[];C.ray.update('none');}return;}
+  // true
+  const F=sim.F.n1+sim.F.n2,xF=sim.F.n1/F,W=sim.n1+sim.n2,xW=sim.x();const D1=sim.tubes.reduce((a,t)=>a+t.n1,0),D2=sim.tubes.reduce((a,t)=>a+t.n2,0),D=D1+D2,xD=D1/D;
+  const L=sim.lost.n1+sim.lost.n2;
+  // measured
+  const fm=sim.measure(xF,0,null,'liq'),rm=sim.measure(xW,1,sim.T,'liq');const phF=fm.p/100,phW=rm.p/100;
+  const mF=molesFromVol(s,sim.cfg.charge,fm.p),Fm=mF.n1+mF.n2,xFm=xFromVol(s,fm.p);
+  const Wv=sim.potVol(),mW=molesFromVol(s,Wv,rm.p),Wm=mW.n1+mW.n2,xWm=xFromVol(s,rm.p);
+  let Dm=0,DmA=0;sim.tubes.forEach((t,i)=>{const m=sim.measure(t.x,i+2,t.Th,'vap');const mm=molesFromVol(s,t.vol,m.p);Dm+=mm.n1+mm.n2;DmA+=mm.n1;});
+  const xDm=DmA/Dm;
+  const Rt=rayIntegral(s,P,xF,xW),Rm=rayIntegral(s,P,xFm,xWm);
+  const closureT=100*(W*xW+D*xD)/(F*xF),closureM=100*(Wm*xWm+DmA)/(Fm*xFm),totM=100*(Wm+Dm)/Fm;
+  const r=(a,d=3)=>isFinite(a)?a.toFixed(d):'—';
+  $('#rayBody').innerHTML=`<div class="tablewrap"><table><thead><tr><th>Quantity</th><th>Measured (refractometer + volumes)</th><th>Simulation truth</th></tr></thead><tbody>
+   <tr><td class="txt">Feed F (mol)</td><td>${r(Fm)}</td><td>${r(F)}</td></tr>
+   <tr><td class="txt">Feed x<sub>F</sub></td><td>${r(xFm,4)}</td><td>${r(xF,4)}</td></tr>
+   <tr><td class="txt">Residue W (mol)</td><td>${r(Wm)}</td><td>${r(W)}</td></tr>
+   <tr><td class="txt">Residue x<sub>W</sub></td><td>${r(xWm,4)}</td><td>${r(xW,4)}</td></tr>
+   <tr><td class="txt">Distillate D (mol)</td><td>${r(Dm)}</td><td>${r(D)}</td></tr>
+   <tr><td class="txt">Distillate x<sub>D,avg</sub></td><td>${r(xDm,4)}</td><td>${r(xD,4)}</td></tr>
+   <tr><td class="txt">Vapour lost (mol)</td><td>not measurable</td><td>${r(L)}</td></tr>
+   <tr><td class="txt">Left wetting the condenser (mol)</td><td>not measurable</td><td>${r(sim.hold.n1+sim.hold.n2,4)}</td></tr>
+   <tr><td class="txt">ln(W/F)</td><td>${r(Math.log(Wm/Fm),4)}</td><td>${r(Math.log(W/F),4)}</td></tr>
+   <tr><td class="txt">∫ dx/(y* − x), equilibrium</td><td>${r(Rm.I,4)}</td><td>${r(Rt.I,4)}</td></tr>
+   <tr><td class="txt">W predicted by Rayleigh (mol)</td><td>${r(Fm*Math.exp(Rm.I))}</td><td>${r(F*Math.exp(Rt.I))}</td></tr>
+   <tr><td class="txt">Alcohol balance closure</td><td>${r(closureM,1)} %</td><td>${r(closureT,1)} %</td></tr>
+   <tr><td class="txt">Total mole balance closure</td><td>${r(totM,1)} %</td><td>${r(100*(W+D)/F,1)} %</td></tr></tbody></table></div>`;
+  const dev=100*(Math.exp(Rt.I)-W/F)/(W/F);
+  const reasons=[];if(sim.cfg.eff<1)reasons.push(`the still efficiency is ${Math.round(sim.cfg.eff*100)}%, so the vapour is leaner than equilibrium and more liquid must boil off to strip the pot`);
+  if(sim.tubes.some(t=>t.bump))reasons.push('bumping carried pot liquid into the distillate');if(sim._overWarn)reasons.push('the overfilled flask carried foam into the condenser');if(sim.cfg.fx.hold)reasons.push('about 1.2 mL of distillate stayed on the condenser walls, so it is in neither W nor D');if(sim.cfg.riT!==20)reasons.push(`the fractions were read at ${sim.cfg.riT} °C instead of the 20 °C calibration temperature, so the measured column reads too weak`);
+  if(sim.cfg.cool!=='on')reasons.push('vapour escaped from the condenser, so the measured D is too small and the balances do not close');
+  if(sim.hist.some(p=>p.y!=null&&p.ystar!=null&&p.ystar-p.y>0.02))reasons.push('high boil-up entrained liquid droplets');
+  $('#rayNote').innerHTML=`<p><b>How to read this.</b> The Rayleigh equation assumes the vapour leaving is in equilibrium with the pot liquid. With that assumption it predicts W/F = ${r(Math.exp(Rt.I),3)}. The still actually left W/F = ${r(W/F,3)}, a difference of ${r(dev,1)}%.</p><br>
+   <p>${reasons.length?'<b>Why they differ in this run:</b> '+reasons.join('; ')+'.':'<b>This run is close to ideal</b>, so the integral and ln(W/F) agree closely. Switch real-world effects back on one at a time to see which one moves the result most.'}</p><br>
+   <p>The "measured" column adds refractometer and calibration error on top of this. Comparing the two columns tells you how much of a discrepancy comes from your analysis rather than from the process.${Rm.blow||Rt.blow?' <b>Note:</b> the composition range reaches the azeotrope, where y* − x → 0 and the integrand blows up.':''}</p>`;
+  if(C.ray){C.ray.data.datasets[0].data=Rt.pts.map(p=>({x:p.x,y:Math.min(p.y,60)}));C.ray.update('none');}}
+
+/* ---------------- Compare runs ---------------- */
+function cfgLabel(c){const off=FX.filter(k=>c.fx&&!c.fx[k]);return `${SYS[c.sys].short} ${c.feed}%, heater ${c.heater}%, E ${Math.round(c.eff*100)}%${c.chips?'':', no chips'}${c.cool!=='on'?', cooling '+c.cool:''}, ${c.P} kPa${off.length===FX.length?', all effects off':off.length?', off: '+off.map(k=>FXNAME[k]).join(', '):''}`;}
+function renderCompare(){const ser=['--s1','--s2','--s3','--s4','--s5','--s6'];
+  if(C.cmp){C.cmp.data.datasets=saved.slice(-6).map((r,i)=>line(`Run ${r.id}${r.label?': '+r.label:''}`,css(ser[i]),{tension:0,pointRadius:3.5,pointBackgroundColor:css(ser[i]),data:r.fr.map((p,k)=>({x:k+1,y:p}))}));
+    if(labData.length)C.cmp.data.datasets.push({label:'Your lab data',data:labData,backgroundColor:css('--ink'),borderColor:css('--ink'),borderDash:[4,4],borderWidth:1.5,pointStyle:'triangle',pointRadius:7,showLine:true});
+    C.cmp.update('none');}
+  $('#runTable').innerHTML=saved.length?`<thead><tr><th>Run</th><th>Settings</th><th>Fractions</th><th>1st fraction %v/v</th><th>Avg distillate %v/v</th><th>Residue %v/v</th><th>Alcohol recovery</th><th>Time (min)</th><th>Energy (kJ)</th><th>Vapour lost (mL)</th></tr></thead><tbody>`+
+    saved.map(r=>`<tr><td>${r.id}</td><td class="txt">${r.label?'<b>'+r.label+'</b><br>':''}${cfgLabel(r.cfg)}</td><td>${r.s.nf}</td><td>${r.s.first.toFixed(1)}</td><td>${r.s.pDavg.toFixed(1)}</td><td>${r.s.residue.toFixed(1)}</td><td>${r.s.recovery.toFixed(1)} %</td><td>${r.s.time.toFixed(1)}</td><td>${r.s.energy.toFixed(0)}</td><td>${r.s.lostmL.toFixed(1)}</td></tr>`).join('')+'</tbody>'
+    :'<tbody><tr><td class="txt muted">No saved runs yet. Finish a run, then press Save this run.</td></tr></tbody>';}
+
+/* ---------------- Factorial design ---------------- */
+const FACT=[{id:'feed',name:'Feed alcohol (%v/v)',lo:20,hi:60},{id:'heater',name:'Heater after boiling (%)',lo:30,hi:70},{id:'eff',name:'Still efficiency (%)',lo:60,hi:100},{id:'P',name:'Pressure (kPa)',lo:87,hi:101.325},{id:'chips',name:'Boiling chips (0 = no, 1 = yes)',lo:0,hi:1}];
+function renderDoeSetup(){$('#doeSetup').innerHTML=`<thead><tr><th>Use</th><th>Factor</th><th>Low (−)</th><th>High (+)</th></tr></thead><tbody>`+
+  FACT.map((f,i)=>`<tr><td><input type="checkbox" id="df${i}" ${i<3?'checked':''} aria-label="Use ${f.name}"></td><td class="txt">${f.name}</td><td><input type="number" id="dlo${i}" value="${f.lo}" step="any" style="width:90px"></td><td><input type="number" id="dhi${i}" value="${f.hi}" step="any" style="width:90px"></td></tr>`).join('')+'</tbody>';}
+function runDoe(){const use=FACT.map((f,i)=>({...f,i,on:$('#df'+i).checked,lo:+$('#dlo'+i).value,hi:+$('#dhi'+i).value})).filter(f=>f.on);
+  if(use.length<2||use.length>3){$('#doeMsg').textContent='Choose 2 or 3 factors.';return;}$('#doeMsg').textContent='';
+  const base=readCfg();const k=use.length,runs=[];
+  for(let m=0;m<(1<<k);m++){const cfg={...base};const lv=use.map((f,j)=>(m>>j)&1?1:-1);
+    use.forEach((f,j)=>{let v=lv[j]>0?f.hi:f.lo;if(f.id==='eff')v=v/100;if(f.id==='chips')v=!!v;cfg[f.id]=v;});
+    cfg.feed=Math.max(1,Math.min(95,cfg.feed));const sm=new Sim(cfg,1000+m);sm.runToEnd();runs.push({lv,cfg,s:sm.summary(),reason:sm.doneReason});}
+  const resp=[{k:'pDavg',n:'Avg distillate (%v/v)',d:1},{k:'recovery',n:'Alcohol recovery (%)',d:1},{k:'time',n:'Run time (min)',d:1},{k:'energy',n:'Energy used (kJ)',d:0}];
+  const effects=[];use.forEach((f,j)=>effects.push({name:f.name.replace(/ \(.*\)/,''),col:r=>r.lv[j]}));
+  for(let a=0;a<k;a++)for(let b=a+1;b<k;b++)effects.push({name:`${use[a].name.replace(/ \(.*\)/,'')} × ${use[b].name.replace(/ \(.*\)/,'')}`,col:r=>r.lv[a]*r.lv[b]});
+  const N=runs.length;const eff=resp.map(R=>effects.map(E=>runs.reduce((s,r)=>s+E.col(r)*r.s[R.k],0)/(N/2)));
+  let html=`<div class="tablewrap"><table><thead><tr><th>Run</th>${use.map(f=>`<th>${f.name}</th>`).join('')}${resp.map(R=>`<th>${R.n}</th>`).join('')}</tr></thead><tbody>`+
+    runs.map((r,i)=>`<tr><td>${i+1}</td>${r.lv.map((l,j)=>`<td>${l>0?'+':'−'} (${use[j].id==='chips'?(l>0?'yes':'no'):(l>0?use[j].hi:use[j].lo)})</td>`).join('')}${resp.map(R=>`<td>${r.s[R.k].toFixed(R.d)}</td>`).join('')}</tr>`).join('')+'</tbody></table></div>';
+  html+=`<div class="grid2">`+resp.map((R,ri)=>{const mx=Math.max(1e-9,...eff[ri].map(Math.abs));
+    return `<div class="chartcard"><h2 style="font-size:1.1rem">Effects on ${R.n.toLowerCase()}</h2><div class="effects"><div class="effrow" style="font:600 .74rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)"><span>Factor</span><span style="text-align:center">Effect, low → high level (${R.n.replace(/^[^(]*\(?/,'').replace(/\)$/,'')||'units'})</span><span style="text-align:right">Value</span></div>`+effects.map((E,ei)=>{const v=eff[ri][ei],w=50*Math.abs(v)/mx;
+      return `<div class="effrow"><span>${E.name}</span><div class="effbar"><i style="left:${v<0?50-w:50}%;width:${w}%;background:${v<0?'var(--s2)':'var(--s1)'}"></i></div><b class="num" style="text-align:right">${v>0?'+':''}${v.toFixed(R.d)}</b></div>`;}).join('')+`</div></div>`;}).join('')+`</div>`;
+  html+=`<p class="note">An <b>effect</b> is the average change in the response when the factor moves from its low to its high level. Blue bars are increases and orange bars are decreases. A large <b>interaction</b> means one factor's effect depends on the level of the other, which a one-factor-at-a-time study would miss. Example: does a higher heater setting cost more purity when the still efficiency is already low?</p>`;
+  $('#doeOut').innerHTML=html;}
+
+/* ---------------- Render orchestration ---------------- */
+
+function renderAll(force){if(!sim)return;renderReadouts();renderLog();renderRack();
+  if(isVis('live')||isVis('vle')||force)renderCharts();if(isVis('fractions')||force)renderFractions(force);if(isVis('refr')||force)renderCal(force);if(isVis('ray')||force)renderRay(force);
+  
+  $('#ctxAnalysis').textContent=`Current run: ${sim.s.short}–water, ${sim.cfg.feed} %v/v feed, ${sim.cfg.P} kPa, ${sim.phase==='done'?'complete':sim.phase==='idle'?'not started':'in progress'}. Change it on the Lab tab.`;
+  $('#btnSave').disabled=sim.phase!=='done'||saved.some(r=>r.seed===sim.seed);}
+
+/* ---------------- Events ---------------- */
+function setSys(k){if(running||(sim&&sim.phase!=='idle'&&sim.phase!=='done'))return;sysKey=k;$('#sysIpa').setAttribute('aria-pressed',k==='ipa');$('#sysEth').setAttribute('aria-pressed',k==='eth');updateOutputs();newSim();$('#btnRun').disabled=false;}
+$('#sysIpa').onclick=()=>setSys('ipa');$('#sysEth').onclick=()=>setSys('eth');
+['#flask','#feed','#charge','#press','#chips','#frac','#nfrac','#eff','#loss','#noise'].forEach(id=>$(id).addEventListener('input',()=>{updateOutputs();if(sim&&sim.phase==='idle'){newSim();}}));
+['#heater','#proc','#cool','#nfrac'].forEach(id=>$(id).addEventListener('input',()=>{updateOutputs();if(sim){const c=readCfg();const was=sim.cfg.cool;sim.cfg.heater=c.heater;sim.cfg.proc=c.proc;sim.cfg.cool=c.cool;
+  if(sim.phase!=='idle'&&sim.phase!=='done'){if(id==='#heater')sim.log(`Heater set to ${c.heater}% (${Math.round(maxW(c.flask)*c.heater/100)} W).`);if(id==='#cool'&&was!==c.cool){sim.log(`Cooling water: ${$('#cool').selectedOptions[0].text}.`,c.cool==='on'?'':'warn');sim._coolWarn=false;}
+    if(id==='#nfrac'){sim.cfg.nfrac=c.nfrac;}}}}));
+$('#riT').addEventListener('input',()=>{if(sim){sim.cfg.riT=sim.cfg.fx.temp?+$('#riT').value:20;fracKey='';rayKey='';calKey='';renderAll(true);}});
+$('#fx_temp').addEventListener('input',()=>{syncFx();if(sim){sim.cfg.fx.temp=$('#fx_temp').checked;sim.cfg.riT=sim.cfg.fx.temp?+$('#riT').value:20;fracKey='';rayKey='';calKey='';renderAll(true);}});
+['eq','entrain','loss','hold','contract','foam','noise'].forEach(k=>$('#fx_'+k).addEventListener('input',()=>{syncFx();if(sim&&sim.phase==='idle')newSim();}));
+function setAllFx(on){FX.forEach(k=>$('#fx_'+k).checked=on);syncFx();if(sim&&sim.phase==='idle')newSim();else if(sim){sim.cfg.fx.temp=on;sim.cfg.riT=on?+$('#riT').value:20;fracKey='';rayKey='';renderAll(true);}}
+$('#fxAllOn').onclick=()=>setAllFx(true);$('#fxAllOff').onclick=()=>setAllFx(false);
+$('#fxCompare').onclick=()=>{const c=readCfg();saved=[];
+  [[true,'Real lab (all effects on)'],[false,'Textbook ideal (all effects off)']].forEach(([on,label])=>{sim=new Sim({...c,fx:Object.fromEntries(FX.map(k=>[k,on]))},seedCounter++);sim.runToEnd();saveRun(label);});
+  bubblesArr.length=0;dropsArr.length=0;logLen=-1;rackLen=-1;fracKey='';rayKey='';calKey='';running=false;setLocked(true);$('#btnRun').disabled=true;$('#btnRun').textContent='Start';
+  goTo('compare');};
+$('#btnRun').onclick=()=>{if(!sim||sim.phase==='done')return;running=!running;$('#btnRun').textContent=running?'Pause':'Resume';if(running){setLocked(true);lastFrame=performance.now();}renderReadouts();};
+$('#btnFinish').onclick=()=>{if(!sim||sim.phase==='done')return;setLocked(true);sim.runToEnd();running=false;$('#btnRun').textContent='Start';$('#btnRun').disabled=true;renderAll(true);};
+$('#btnReset').onclick=()=>{$('#btnRun').disabled=false;newSim();logLen=-1;rackLen=-1;};
+const VIEW={live:'lab',fractions:'lab',lessons:'lessons',refr:'analysis',ray:'analysis',vle:'analysis',compare:'compare',doe:'compare',model:'help'};
+const VIEWS=['lab','lessons','analysis','compare','help'];const SUB={analysis:'ray',compare:'compare'};let currentView='lab';
+function isVis(p){const v=VIEW[p];if(v!==currentView)return false;if(SUB[v]!==undefined)return SUB[v]===p;return true;}
+function showView(v){currentView=v;$$('.view').forEach(x=>x.hidden=x.dataset.view!==v);$$('#appnav a').forEach(a=>{if(a.dataset.view===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+  for(const g in SUB){$$(`.view[data-view="${g}"] .panel`).forEach(p=>p.hidden=p.dataset.panel!==SUB[g]);$$(`.view[data-view="${g}"] .subtabs button`).forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===SUB[g]));}
+  Object.values(C).forEach(c=>c.resize());renderAll(true);if(isVis('compare'))renderCompare();}
+function selectTab(name){const v=VIEW[name];if(SUB[v]!==undefined)SUB[v]=name;if(location.hash!=='#'+v){try{history.pushState(null,'','#'+v);}catch(e){}}showView(v);}
+function goTo(name){selectTab(name);const sm=matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';
+  if(name==='live')$('.bench').scrollIntoView({block:'start',behavior:sm});else if(VIEW[name]==='lab')$(`.panel[data-panel="${name}"]`).scrollIntoView({block:'start',behavior:sm});else window.scrollTo({top:0,behavior:sm});}
+function fromHash(){const h=location.hash.slice(1);const v=VIEWS.includes(h)?h:'lab';if(v!==currentView){showView(v);window.scrollTo(0,0);}}
+addEventListener('hashchange',fromHash);addEventListener('popstate',fromHash);
+$$('#appnav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();const v=a.dataset.view;if(location.hash!=='#'+v){try{history.pushState(null,'','#'+v);}catch(err){}}showView(v);window.scrollTo(0,0);}));
+$$('.subtabs button').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
+$('#btnRun2').onclick=()=>{if(currentView!=='lab'&&!running&&sim&&sim.phase==='idle')goTo('live');$('#btnRun').click();};
+function setAdv(on){$('#advToggle').checked=on;$('#settings').classList.toggle('basic',!on);try{localStorage.setItem('bsl-adv',on?'1':'0');}catch(e){}}
+$('#advToggle').addEventListener('input',()=>setAdv($('#advToggle').checked));
+try{if(localStorage.getItem('bsl-adv')==='1')setAdv(true);}catch(e){}
+$('#btnCsv').onclick=()=>{const text=csv();const box=$('#csvBox');const fallback=()=>{box.hidden=false;box.value=text;box.focus();box.select();$('#csvMsg').textContent='Copying is blocked here. The data is selected below, so press Ctrl+C.';};
+  try{navigator.clipboard.writeText(text).then(()=>{$('#csvMsg').textContent='Copied. Paste it into Excel or a .csv file.';},fallback);}catch(e){fallback();}};
+['#calSetSel','#calMethodSel'].forEach(id=>$(id).addEventListener('input',()=>{calSet=$('#calSetSel').value;calMethod=$('#calMethodSel').value;
+  if(sim){sim.cal=makeCal(sim.s,sim.cfg.noise,sim.gauss,calSet,calMethod);calVersion++;fracKey='';rayKey='';calKey='';renderAll(true);}}));
+$('#btnRecal').onclick=()=>{sim.cal=makeCal(sim.s,sim.cfg.noise,sim.gauss,calSet,calMethod);calVersion++;fracKey='';rayKey='';renderAll(true);};
+function saveRun(label){if(sim.phase!=='done')return;const s=sim.summary();saved.push({id:saved.length+1,label:label||'',seed:sim.seed,cfg:{...sim.cfg},s,fr:sim.tubes.map(t=>volPct(sim.s,t.x))});renderCompare();renderAll(false);}
+$('#btnSave').onclick=()=>saveRun('');
+$('#btnLab').onclick=()=>{const pts=[];let bad=0;$('#labData').value.split(/\n/).forEach(l=>{const m=l.trim().split(/[\s,;]+/);if(m.length<2||!m[0])return;const f=parseFloat(m[0]),v=parseFloat(m[1]);if(!isFinite(f)||!isFinite(v)){bad++;return;}
+  let pct=v;if(v>1.2&&v<1.5){pct=invertCal(sim.cal,v,'lean').p;}pts.push({x:f,y:pct});});
+  labData=pts;$('#labMsg').textContent=pts.length?`Plotted ${pts.length} fraction${pts.length>1?'s':''}${bad?`. Skipped ${bad} line${bad>1?'s':''} that weren't two numbers`:''}.`:'No data found. Use one line per fraction: fraction number, then %v/v or refractive index.';renderCompare();};
+$('#btnLabClear').onclick=()=>{labData=[];$('#labMsg').textContent='';renderCompare();};
+$('#btnClearRuns').onclick=()=>{saved=[];renderCompare();renderAll(false);};
+$('#btnDoe').onclick=runDoe;
+// theme changes → rebuild charts with new tokens
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>buildCharts());
+new MutationObserver(()=>buildCharts()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+/* ---------------- Guided tour ---------------- */
+const TOUR=[
+ {sel:'.brand',t:'Welcome to the virtual batch still',b:'This page simulates the CLB 321 simple batch distillation practical. As in the lab, you charge a flask with an alcohol–water mixture, boil it, condense the vapour and collect it in fractions, then analyse those fractions. Because it is a calculation, you can repeat runs and try things that would be unsafe or wasteful in the real lab, and see why each result comes out as it does.'},
+ {sel:'.sys-switch',t:'Choose the mixture',b:'Subgroup A distils isopropyl alcohol (IPA)–water. Subgroup B distils ethanol–water. Both alcohols are more volatile than water, and both form an azeotrope with water, which caps how pure the distillate can get. You can only switch systems between runs.'},
+ {sel:'#fsCharge',t:'Charge: what goes into the flask',b:'Feed alcohol is the strength of the mixture you make up, in %v/v as on the lab sheet. The mole fraction x is shown beside it because the theory works in moles. Charge volume is how much you pour in. Boiling chips prevent bumping. Turn on All settings at the top of this panel to choose the flask size and the air pressure. Pressure matters because Pretoria is about 1 350 m above sea level, so everything boils 3–4 °C below textbook values.'},
+ {sel:'#fsOp',t:'Operation: how you run it',b:'The heater slider is the mantle setting. The procedure says to heat at full power until the mixture boils, then turn down to just below half. Leave the procedure box ticked to do exactly that. Cooling water must be on before you heat. You can change the heater and cooling water while the still is running. Fraction size and the number of fractions are under All settings.'},
+ {sel:'#fsNon',t:'Real-world effects: switch them on and off',b:'Real lab switches on everything that goes wrong in practice. Textbook ideal switches it all off, giving the perfect still that the Rayleigh equation assumes. Open Choose effects one by one to switch individual effects, such as heat loss or refractometer error, and read what each one does to your results. Compare ideal vs real runs both cases side by side.'},
+ {sel:'.stage .controls',t:'Run controls',b:'Start, Pause and Resume control the run. Speed runs time faster: at 30× a 20-minute distillation takes under a minute. Finish instantly jumps to the end. Reset empties the flask so you can change the charge settings. The coloured pill shows the stage: heating up, boiling or complete.'},
+ {sel:'#ap',t:'The apparatus',b:'The heating mantle glows brighter at higher power. Bubbles appear in the round-bottom flask once it reaches its bubble point. The thermometer bulb sits level with the side arm, so it reads the vapour leaving the flask. The vapour then passes through the Liebig condenser, where cooling water enters at the low end and leaves at the high end (counter-current flow). Distillate drips into the tube, and the red dashed line is the polytop mark.'},
+ {sel:'#rack',t:'Fraction rack',b:'Finished fractions are kept here in the order they were collected, like labelled polytops. A darker tube means more alcohol (real distillate is colourless). The tubes get lighter as the run goes on: the first fraction is always the strongest, because the pot keeps losing alcohol.'},
+ {sel:'#roMain',t:'Live readings',b:'The four big numbers are the ones you would watch in the lab. Open All readings for the rest, including some you cannot measure in the lab. x is the alcohol mole fraction in the pot. y* is the vapour composition in equilibrium with that liquid, and y is what actually leaves. When y is below y*, the still is not reaching equilibrium. Condenser holdup is liquid wetting the condenser walls that never reaches a fraction.'},
+ {sel:'#log',t:'Lab notebook',b:'Important events are logged here with the time: bubble point, first drop, each fraction, bumps and safety warnings. An orange edge marks a problem. A red edge marks something dangerous or something that ruins your data.'},
+  {sel:'#appnav',t:'The tabs',b:'The top bar has five tabs, and it stays in place as you scroll. Lab is where you set up and run the still, with the results directly underneath. Lessons has guided experiments. Analysis has the refractometer, Rayleigh and equilibrium work. Compare puts runs side by side. Help has this tour and the model notes. The run status and Start button on the right work from any tab.'},
+ {sel:'.panel[data-panel="live"]',tab:'live',t:'Live graphs',b:'The temperature graph shows the heat-up, a plateau at the bubble point, then a slow rise as the pot loses alcohol. The composition graph shows that the vapour is always richer than the liquid, and that both fall as you collect distillate. The green dots are your fraction averages.'},
+ {sel:'.panel[data-panel="lessons"]',tab:'lessons',t:'Guided experiments',b:'If you are studying, start here. Each lesson sets up the simulator to answer one question, such as why the heater is turned down or what boiling chips actually do. It runs the comparison for you, then explains what you should see and why.'},
+ {sel:'.panel[data-panel="fractions"]',tab:'fractions',t:'Fractions table: your results sheet',b:'Each fraction is listed with its volume, collection time, true composition and measured refractive index, converted with your calibration. The Error column shows how far the measurement is from the truth. Copy the whole sheet as CSV to work on it in Excel.'},
+ {sel:'.panel[data-panel="refr"]',tab:'refr',t:'Refractometer calibration',b:'This is section 3 of the procedure. You make standards, measure their refractive index and fit a calibration curve, and the simulator does the same with realistic reading noise. Press Re-measure the standards to see how calibration scatter feeds into your results.'},
+ {sel:'.panel[data-panel="ray"]',tab:'ray',t:'Rayleigh analysis',b:'This is section 7.1. The overall balance, the alcohol balance and the Rayleigh equation are worked out twice, once from your measurements and once from the simulation truth. The note explains why ln(W/F) and the integral disagree in this run, which is the core of your error discussion.'},
+ {sel:'.panel[data-panel="vle"]',tab:'vle',t:'Equilibrium diagrams',b:'Section 7.2 asks for equilibrium data, so here it is, calculated at your pressure. On the T–x–y diagram the bubble and dew curves meet at the azeotrope. On the x–y diagram the orange trace shows how far your real still fell below equilibrium.'},
+ {sel:'.panel[data-panel="compare"]',tab:'compare',t:'Compare runs',b:'Save a run, change one thing, then run and save again. The chart overlays fraction purity and the table lists purity, recovery, time and energy for each run. Paste your real lab readings at the bottom to plot them against the simulation.'},
+ {sel:'.panel[data-panel="doe"]',tab:'doe',t:'Factorial design',b:'Appendix 9.1 of the lab guide recommends factorial designs over changing one factor at a time. Pick two or three factors and the simulator runs every combination instantly, then reports main effects and interactions. Use it to plan which real runs are worth doing.'},
+ {sel:'.panel[data-panel="model"]',tab:'model',t:'About the model',b:'This tab sets out the equations behind every number and what the simulation still simplifies, which helps with your theory section and error discussion. That is the end of the tour. Press Finish to open the Lessons tab.'}];
+let tourI=-1;
+function tourPlace(){if(tourI<0)return;const el=$(TOUR[tourI].sel);if(!el)return;const r=el.getBoundingClientRect(),pad=6,vh=innerHeight,vw=innerWidth;
+  const hole=$('#tourHole');const top=Math.max(4,r.top-pad),bot=Math.min(vh-4,r.bottom+pad);
+  Object.assign(hole.style,{left:(r.left-pad)+'px',top:top+'px',width:(r.width+2*pad)+'px',height:Math.max(0,bot-top)+'px'});
+  const card=$('#tourCard'),cw=card.offsetWidth,ch=card.offsetHeight;let x,y;
+  if(vw<720){x=16;y=vh-ch-16;}
+  else if(r.bottom+12+ch<vh-8){y=r.bottom+12;x=r.left;}
+  else if(r.top-12-ch>8){y=r.top-12-ch;x=r.left;}
+  else if(r.right+16+cw<vw-8){x=r.right+16;y=Math.max(16,Math.min(vh-ch-16,r.top));}
+  else if(r.left-16-cw>8){x=r.left-16-cw;y=Math.max(16,Math.min(vh-ch-16,r.top));}
+  else{x=vw-cw-16;y=vh-ch-16;}
+  x=Math.max(16,Math.min(vw-cw-16,x));card.style.left=x+'px';card.style.top=y+'px';}
+function tourShow(i){if(i<0)i=0;if(i>=TOUR.length){tourEnd();goTo('lessons');return;}tourI=i;const st=TOUR[i];
+  selectTab(st.tab||'live');
+  ['#tourBlock','#tourHole','#tourCard'].forEach(k=>$(k).hidden=false);
+  $('#tourStep').textContent=`Step ${i+1} of ${TOUR.length}`;$('#tourTitle').textContent=st.t;$('#tourBody').textContent=st.b;
+  $('#tourBack').disabled=i===0;$('#tourNext').textContent=i===TOUR.length-1?'Finish':'Next';
+  const el=$(st.sel);const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(el){const r=el.getBoundingClientRect();if(r.top<90||r.bottom>innerHeight-(innerWidth<720?$('#tourCard').offsetHeight+30:20))el.scrollIntoView({block:innerWidth<720?'start':'center',behavior:reduce?'auto':'smooth'});}
+  tourPlace();setTimeout(tourPlace,350);setTimeout(tourPlace,700);$('#tourNext').focus({preventScroll:true});}
+function tourEnd(){tourI=-1;['#tourBlock','#tourHole','#tourCard'].forEach(k=>$(k).hidden=true);try{localStorage.setItem('bsl-tour-seen','1');}catch(e){}$('#banner').hidden=true;}
+$('#tourNext').onclick=()=>tourShow(tourI+1);$('#tourBack').onclick=()=>tourShow(tourI-1);$('#tourEnd').onclick=tourEnd;
+$('#btnTour').onclick=()=>tourShow(0);$('#bannerTour').onclick=()=>tourShow(0);
+$('#bannerClose').onclick=()=>{$('#banner').hidden=true;try{localStorage.setItem('bsl-tour-seen','1');}catch(e){}};
+addEventListener('scroll',tourPlace,{passive:true});addEventListener('resize',tourPlace);
+addEventListener('keydown',e=>{if(tourI<0)return;if(e.key==='Escape')tourEnd();if(e.key==='ArrowRight')tourShow(tourI+1);if(e.key==='ArrowLeft')tourShow(tourI-1);});
+
+/* ---------------- Guided experiments ---------------- */
+const DEF={sys:'ipa',flask:'500',feed:50,charge:250,press:'87',chips:true,heater:45,proc:true,cool:'on',frac:'10',nfrac:12,eff:90,loss:'0.45',noise:'0.0002',riT:'20'};
+const LESSONS=[
+ {t:'The standard procedure',goal:'Run the experiment exactly as the lab sheet describes, and learn what a normal run looks like.',
+  watch:['The temperature climbs during heat-up, then levels off at the bubble point (about 78 °C for 50 %v/v IPA at Pretoria pressure).','The first drop arrives a little after boiling starts, because the condenser walls have to wet first.','Each fraction is weaker than the one before, and the still-head temperature creeps upward.'],
+  q:['Pure water boils at a constant temperature. Why does this temperature keep rising after boiling starts?','Why is fraction 1 always the strongest?'],
+  a:'As alcohol leaves, the pot liquid gets leaner, and a leaner liquid has a higher bubble point, so the temperature rises steadily. The first vapour comes from the richest liquid, so fraction 1 is the strongest. This continuously changing composition is exactly what the Rayleigh equation describes.',
+  variants:[{label:'Standard procedure',set:{}}],live:0,after:'live'},
+ {t:'Why turn the heater down?',goal:'The procedure says to drop to just below half power once boiling starts. Find out what that buys you and what it costs.',
+  watch:['Compare the run time and the average distillate strength in the table.','Look at how the purity curves differ fraction by fraction.'],
+  q:['Which setting gives the purest distillate, and which finishes fastest?','Why does very low power waste energy?'],
+  a:'Full power finishes far sooner, but the distillate is weaker. Violent boiling throws droplets of pot liquid into the vapour (entrainment), and that liquid is much leaner than the vapour. At very low power most of the heat simply leaks out through the glass, so the run takes much longer and uses more energy. The procedure is a compromise between speed and separation.',
+  variants:[{label:'Heater 25%',set:{heater:25}},{label:'Heater 45% (procedure)',set:{heater:45}},{label:'Heater 100%',set:{heater:100}}],after:'compare'},
+ {t:'What do boiling chips do?',goal:'See what happens when you forget the boiling chips.',
+  watch:['The lab notebook reports superheating and bumps.','Tubes outlined in orange in the rack, marked "bump" in the Fractions tab.','The purity of the contaminated fractions.'],
+  q:['Why does a bump make a fraction weaker rather than stronger?','Why must you never add chips to liquid that is already hot?'],
+  a:'Without nucleation sites the liquid superheats past its bubble point and then flashes violently. Each bump splashes pot liquid, which is much weaker than the vapour, into the receiver. Dropping chips into superheated liquid sets off that flash all at once, and the flask can erupt. Cool the liquid first.',
+  variants:[{label:'With boiling chips',set:{chips:true}},{label:'No boiling chips',set:{chips:false}}],live:1,after:'compare'},
+ {t:'Cooling water matters',goal:'See what the condenser is really doing.',
+  watch:['The vapour-lost figure in the comparison table.','The red safety warnings in the lab notebook.','The mass balance closure on the Rayleigh tab.'],
+  q:['If vapour escapes, which term in F = W + D is wrong?','Why does the water enter at the bottom of the condenser?'],
+  a:'With no cooling, most of the vapour passes straight through. You lose product, your measured D is too small, the mass balance will not close, and flammable alcohol vapour fills the room. Always turn the water on before the heater. Counter-current flow (water in at the low end) keeps the coldest water where the condensate leaves, which gives the best heat transfer.',
+  variants:[{label:'Full cooling',set:{cool:'on'}},{label:'Trickle flow',set:{cool:'low'}},{label:'No cooling water',set:{cool:'off',nfrac:8}}],live:2,after:'compare'},
+ {t:'The azeotrope ceiling',goal:'Find out why you can never distil pure IPA in this apparatus.',
+  watch:['The first-fraction strength for each feed.','The T–x–y diagram, where the curves pinch together at the azeotrope.'],
+  q:['What happens to the separation when the feed is already close to the azeotrope?','How could you get past the azeotrope?'],
+  a:'However strong the feed, the distillate approaches but never passes the azeotrope (about 87 wt% IPA, roughly 90 %v/v). Near the azeotrope y* ≈ x, so the vapour is hardly richer than the liquid and a simple still separates almost nothing. Getting past it needs a different method, such as an entrainer (azeotropic distillation), a pressure-swing process or a membrane.',
+  variants:[{label:'Feed 20 %v/v',set:{feed:20}},{label:'Feed 50 %v/v',set:{feed:50}},{label:'Feed 85 %v/v',set:{feed:85}}],after:'compare'},
+ {t:'Pretoria against sea level',goal:'See why you cannot compare your thermometer readings directly with textbook boiling points.',
+  watch:['The bubble-point temperature in the lab notebook for each run.','How much, or how little, the fraction purity changes.'],
+  q:['How much lower does everything boil at 87 kPa?','Why does the separation barely change?'],
+  a:'At 87 kPa everything boils 3–4 °C lower than at 101.3 kPa. The separation hardly changes, because relative volatility depends only weakly on pressure. Always generate equilibrium data at the lab\'s actual pressure. Using 1 atm data introduces a systematic temperature error.',
+  variants:[{label:'Pretoria, 87 kPa',set:{press:'87'}},{label:'Sea level, 101.3 kPa',set:{press:'101.325'}}],live:1,after:'vle'},
+ {t:'Refractometer pitfalls (ethanol)',goal:'Learn where refractive index analysis goes wrong, and how to protect your results.',
+  watch:['The Error column and the "2 roots" flags in the Fractions tab.','The shape of the calibration curve in the Refractometer tab, which has a maximum.'],
+  q:['Why can one ethanol reading match two compositions?','Do hot samples read stronger or weaker than they really are?'],
+  a:'The ethanol–water refractive index peaks at about 80 wt%, so near the azeotrope the curve is almost flat. A tiny reading error becomes a big composition error, and one reading can match two compositions. Hot samples read low, because the index falls by about 0.0004 per °C for alcohol, so the fractions look weaker than they are. Cool samples to the calibration temperature, and cross-check with the still-head temperature or a density reading.',
+  variants:[{label:'Cooled samples, Abbe refractometer',set:{sys:'eth'}},{label:'Hot samples, handheld refractometer',set:{sys:'eth',riT:'45',noise:'0.0006'}}],after:'fractions',single:true},
+ {t:'Testing the Rayleigh equation',goal:'See when the Rayleigh equation predicts your result and when it does not. This is the core of section 7.3.',
+  watch:['Compare ln(W/F) with the integral on the Rayleigh tab for each run.','Read the explanation note under the table.'],
+  q:['Why does the integral overpredict W when the still efficiency is low?','What would you change in the real apparatus to get closer to equilibrium?'],
+  a:'With every real-world effect switched off, ln(W/F) matches the integral almost exactly. Only the calibration curve fit adds a small error. At 60% efficiency the vapour is leaner than equilibrium, so more liquid must boil off to strip the pot to the same x_W, and the equilibrium integral predicts a larger W than you get. Slower boiling, an insulated flask neck and a short packed column all bring the still closer to an equilibrium stage.',
+  variants:[{label:'Textbook ideal (all effects off)',set:{fxAll:false}},{label:'Real still (60% efficiency)',set:{eff:60}}],after:'ray',single:true},
+ {t:'IPA against ethanol',goal:'Compare the two subgroups\' systems under identical conditions, as a basis for your combined report.',
+  watch:['First-fraction and average purity for each system.','The x–y diagrams of both systems. Switch the system at the top to see each one.'],
+  q:['Which system has the richer azeotrope?','At a 50 %v/v feed, does that make any difference to a simple still?'],
+  a:'Ethanol forms its azeotrope at about 89 mol%, against about 68 mol% for IPA, so ethanol can in principle be concentrated much further. From a 50 %v/v feed, a single simple still reaches neither azeotrope. The fractions differ because the two equilibrium curves have different shapes at the low concentrations where the pot spends most of the run.',
+  variants:[{label:'IPA–water',set:{sys:'ipa'}},{label:'Ethanol–water',set:{sys:'eth'}}],after:'compare'},
+ {t:'Design your own factorial experiment',goal:'Use the method from appendix 9.1 of the lab guide to find which factors really matter, before you spend lab time on them.',
+  watch:['The size of each main effect compared with the interactions.'],
+  q:['Which factor has the largest effect on purity? Which has the largest effect on time?','Is there an interaction that a one-factor-at-a-time study would have missed?'],
+  a:'There is no single right answer, because it depends on your levels. Typically the still efficiency and feed strength dominate purity, while the heater dominates time. Use what you find to justify the runs in your planning meeting.',
+  variants:[],doe:true}];
+function applySettings(o){const m={...DEF,...o};running=false;o=o||{};
+  if(['flask','press','frac','nfrac'].some(k=>k in o))setAdv(true);if(['eff','loss','noise','riT'].some(k=>k in o))$('#fxDetails').open=true;
+  sysKey=m.sys;$('#sysIpa').setAttribute('aria-pressed',m.sys==='ipa');$('#sysEth').setAttribute('aria-pressed',m.sys==='eth');
+  $('#flask').value=m.flask;$('#feed').value=m.feed;$('#charge').value=m.charge;$('#press').value=m.press;$('#chips').checked=m.chips;$('#heater').value=m.heater;$('#proc').checked=m.proc;
+  $('#cool').value=m.cool;$('#frac').value=m.frac;$('#nfrac').value=m.nfrac;$('#eff').value=m.eff;$('#loss').value=m.loss;$('#noise').value=m.noise;$('#riT').value=m.riT;
+  FX.forEach(k=>$('#fx_'+k).checked=m.fxAll===false?false:(m['fx_'+k]!==undefined?m['fx_'+k]:true));syncFx();updateOutputs();}
+function lessonLive(L,vi){applySettings(L.variants[vi].set);$('#btnRun').disabled=false;newSim();logLen=-1;rackLen=-1;running=true;setLocked(true);$('#btnRun').textContent='Pause';lastFrame=performance.now();goTo('live');}
+function lessonOne(L,vi){applySettings(L.variants[vi].set);$('#btnRun').disabled=false;newSim();logLen=-1;rackLen=-1;setLocked(true);sim.runToEnd();$('#btnRun').disabled=true;$('#btnRun').textContent='Start';fracKey='';rayKey='';calKey='';goTo(L.after);}
+function lessonCompare(L){saved=[];L.variants.forEach(v=>{applySettings(v.set);newSim();sim.runToEnd();saveRun(v.label);});logLen=-1;rackLen=-1;setLocked(true);$('#btnRun').disabled=true;$('#btnRun').textContent='Start';fracKey='';rayKey='';goTo(L.after);}
+function renderLessons(){$('#lessonGrid').innerHTML=LESSONS.map((L,i)=>{let btns='';
+  if(L.doe)btns=`<button class="btn primary" data-l="${i}" data-a="doe">Open factorial design</button>`;
+  else if(L.single)btns=L.variants.map((v,vi)=>`<button class="btn${vi===0?' primary':''}" data-l="${i}" data-a="one" data-v="${vi}">Run: ${v.label}</button>`).join('');
+  else{if(L.variants.length>1)btns+=`<button class="btn primary" data-l="${i}" data-a="cmp">Run and compare (${L.variants.length} runs)</button>`;
+    btns+=`<button class="btn${L.variants.length>1?'':' primary'}" data-l="${i}" data-a="live" data-v="${L.live||0}">Watch live: ${L.variants[L.live||0].label}</button>`;}
+  return `<article class="lesson"><span class="eyebrow">Lesson ${i+1}</span><h2>${L.t}</h2><p>${L.goal}</p>
+   <span class="lbl">What to watch</span><ul>${L.watch.map(w=>`<li>${w}</li>`).join('')}</ul>
+   <span class="lbl">Think about</span><ul>${L.q.map(w=>`<li>${w}</li>`).join('')}</ul>
+   <div class="controls">${btns}</div>
+   <details><summary>What you should see</summary><p>${L.a}</p></details></article>`;}).join('');
+  $$('#lessonGrid [data-a]').forEach(b=>b.onclick=()=>{const L=LESSONS[+b.dataset.l],a=b.dataset.a;if(a==='doe'){goTo('doe');return;}
+    if(a==='cmp')lessonCompare(L);else if(a==='one')lessonOne(L,+b.dataset.v);else lessonLive(L,+b.dataset.v);});}
+
+/* ---------------- Boot ---------------- */
+updateOutputs();syncFx();renderDoeSetup();renderLessons();newSim();buildCharts();renderCompare();
+{const h=location.hash.slice(1);showView(VIEWS.includes(h)?h:'lab');}
+try{if(!localStorage.getItem('bsl-tour-seen'))$('#banner').hidden=false;}catch(e){$('#banner').hidden=false;}
+// open in a working state: start the default run at 30×
+running=true;setLocked(true);$('#btnRun').textContent='Pause';
+requestAnimationFrame(frame);
+})();
+</script>
